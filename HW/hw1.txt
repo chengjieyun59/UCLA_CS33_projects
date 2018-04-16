@@ -1,0 +1,52 @@
+Jie-Yun Cheng
+004460366
+
+//////////////////
+// Problem 2.71 //
+//////////////////
+
+(A)
+// wrong: return (word >> (bytenum << 3)) & 0xFF;
+An 8 bit number represents 0 to 255, with the first half being for positive numbers and the second half for negative numbers. When 0xFF is extracted, the returned int is 255 instead of the needed -1. The problem is that the function does not use sign extraction to represent the 8 bit signed int as a 32 bit value.
+
+(B)
+int xbyte(packed_t word, int bytenum)
+{
+	return (word << (3-bytenum) << 3)) >> 24;
+	// Make the order correct, left shift by 3 bytes, then right shift by 24 bits.
+	// Now there’s sign extraction to extract byte from word
+	// When we extract bytes 0 from 255, the result is indeed -1.
+}
+
+
+//////////////////
+// Problem 2.82 //
+//////////////////
+
+Does the expression always yield 1? 
+If yes, describe how. If no, give a counterexample.
+
+(A)
+(x < y) == (-x > -y)
+Since this is not just simple math, but 32 bit int value operations in C, this evaluation doesn’t always yield 1. For example, if x = tmin, and y be any number, then x < y is true, but -x would also be tmin, so -x < -y.
+No.
+
+(B)
+((x + y) << 4) + y - x == 17 * y + 15 * x
+Left shift by 4 means multiply by 2^4 = 16. Left shifting is safe, so convert this into a mathematical equation. (x+y)*16 + y - x = 16*x + 16*y + y - x = 17*y + 15*x. The evaluation would always be true.
+Yes.
+
+(C)
+~x + ~y + 1 == ~(x + y)
+To perform negation, we can invert all the bits and then subtract by one: ~x = -x - 1. So convert this into mathematical form, the left hand side yields (-x - 1) + (-y - 1) + 1 = - x - y - 1. The right hand side yields -(x + y) - 1 = - x - y - 1. The left hand side and the right hand side are always equal.
+Yes.
+
+(D)
+(ux - uy) == -(unsigned)(y - x)
+On the left hand side, it is unsigned arithmetic operation. On the right hand side, it is a signed arithmetic operation that is then casted to unsigned. Since they all end up having the same unsigned bit representation, the evaluation would always return true.
+Yes.
+
+(E)
+((x >> 2) << 2) <= x
+Right shifting by 2 is equivalent to doing an integer division by 2^2 = 4. An integer division would eat away the remainder. For example, if we let x = 13, integer division of 13/4 = 3. And now, left shifting by 2 multiplies by 2^2 = 4. So 3*4 = 12. So 12 < 13. ((x >> 2) << 2) < x in this case. For any x that are divisible by 4 (without any remainder), ((x >> 2) << 2) == x. So yes, the left hand side is always smaller or equal to the right hand side.
+Yes.
