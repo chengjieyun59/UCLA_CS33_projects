@@ -1,0 +1,335 @@
+Bomb lab:
+ssh jieyun@lnxsrv01.seas.ucla.edu
+cd bomb150
+after getting to: [jieyun@lnxsrv01 ~/bomb150]$
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                              Phase 1                                               //
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+gdb bomb
+break explode_bomb
+break phase_1
+(Just set breakpoints at whichever phase we’re at)
+
+run
+(gdb outputs:
+Starting program: /w/home.05/ee/ugrad/jieyun/bomb150/bomb 
+Welcome to my fiendish little bomb. You have 6 phases with
+which to blow yourself up. Have a nice day!)
+
+test (this became my input string)
+(gdb outputs:
+Breakpoint 2, 0x0000000000401268 in phase_1 ()
+Missing separate debuginfos, use: debuginfo-install glibc-2.12-1.209.el6_9.2.x86_64)
+
+(gdb) disassemble
+Dump of assembler code for function phase_1:
+=> 0x0000000000401268 <+0>:	sub    $0x8,%rsp
+   0x000000000040126c <+4>:	mov    $0x402448,%esi                // realized later that this address is the key!!!!!!!
+   0x0000000000401271 <+9>:	callq  0x4012ac <strings_not_equal>  // call strings_not_equal function
+   0x0000000000401276 <+14>:	test   %eax,%eax                     // compare &
+   0x0000000000401278 <+16>:	je     0x40127f <phase_1+23>
+   0x000000000040127a <+18>:	callq  0x401496 <explode_bomb>
+   0x000000000040127f <+23>:	add    $0x8,%rsp
+   0x0000000000401283 <+27>:	retq   
+End of assembler dump.)
+
+print/x $eax 
+(gdb returns 0x603de0)
+
+x/30s 0x603de0 
+(x/NumberOfUnitsNeededs address)
+(gdb print string value
+s for string, c for character
+gdb returns:
+0x603de0 <input_strings>:	 "test"
+0x603de5 <input_strings+5>:	 ""
+0x603de6 <input_strings+6>:	 ""
+…
+0x603dfa <input_strings+26>:	 “”)
+
+q 
+(to quit)
+
+x 0x603de0 
+(gdb returns:
+0x603de0 <input_strings>:	0x74736574)
+(0x74 73 65 74 = t s e t. Inverted: t e s t)
+
+(Didn’t find anything besides that %eax stores my input string of “test”. Now look into the “strings_not_equal” function by stepping through the assembly code in gdb)
+
+stepi 3 (step through 3 instructions, so it goes right into strings_not_equal function)
+disassemble
+(gdb prints:
+Dump of assembler code for function strings_not_equal:
+=> 0x00000000004012ac <+0>:	push   %r12
+   0x00000000004012ae <+2>:	push   %rbp
+   0x00000000004012af <+3>:	push   %rbx
+   0x00000000004012b0 <+4>:	mov    %rdi,%rbx
+   0x00000000004012b3 <+7>:	mov    %rsi,%rbp
+   0x00000000004012b6 <+10>:	callq  0x401290 <string_length>
+   0x00000000004012bb <+15>:	mov    %eax,%r12d
+   0x00000000004012be <+18>:	mov    %rbp,%rdi
+   0x00000000004012c1 <+21>:	callq  0x401290 <string_length>
+   0x00000000004012c6 <+26>:	cmp    %eax,%r12d
+   0x00000000004012c9 <+29>:	jne    0x4012f1 <strings_not_equal+69>
+   0x00000000004012cb <+31>:	movzbl (%rbx),%edx
+   0x00000000004012ce <+34>:	test   %dl,%dl
+   0x00000000004012d0 <+36>:	je     0x4012f8 <strings_not_equal+76>
+   0x00000000004012d2 <+38>:	mov    %rbp,%rax
+   0x00000000004012d5 <+41>:	cmp    0x0(%rbp),%dl
+   0x00000000004012d8 <+44>:	je     0x4012e4 <strings_not_equal+56>
+   0x00000000004012da <+46>:	jmp    0x4012f1 <strings_not_equal+69>
+   0x00000000004012dc <+48>:	add    $0x1,%rax
+   0x00000000004012e0 <+52>:	cmp    (%rax),%dl
+   0x00000000004012e2 <+54>:	jne    0x4012f1 <strings_not_equal+69>
+   0x00000000004012e4 <+56>:	add    $0x1,%rbx
+---Type <return> to continue, or q <return> to quit—)
+
+print/x $eax (gdb prints: $2 = 0x0)
+x 0x0
+0x0:	Cannot access memory at address 0x0
+(gdb) print/x $rbp
+$2 = 0x0
+(gdb) x 0x0
+0x0:	Cannot access memory at address 0x0
+(gdb) print/x $dl
+$6 = 0x0
+(gdb) x 0x0
+0x0:	Cannot access memory at address 0x0
+
+(gdb) print/x $r12d
+$7 = 0x400c50
+(gdb) x 0x400c50
+0x400c50 <_start>:	0x31
+(gdb) print/x $eax
+$8 = 0x603de0
+(gdb) x 0x603de0
+0x603de0 <input_strings>:	0x62
+
+(turns out that the first disassemble result had the important information:
+   0x000000000040126c <+4>:	mov    $0x402448,%esi)
+
+x/50s 0x402448
+(gdb outputs: 0x402448 <__dso_handle+384>:	 "I am for medical liability at the federal level.”)
+
+q (to quit)
+./bomb
+I am for medical liability at the federal level.
+(then close the terminal window to quit.)
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                              Phase 2                                               //
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+gdb bomb
+break explode_bomb
+break phase_2
+run
+I am for medical liability at the federal level.
+test
+
+disassemble 
+(gdb outputs:
+Dump of assembler code for function phase_2:
+=> 0x000000000040104d <+0>:	push   %rbp
+   0x000000000040104e <+1>:	push   %rbx
+   0x000000000040104f <+2>:	sub    $0x28,%rsp
+   0x0000000000401053 <+6>:	mov    %rsp,%rsi
+   0x0000000000401056 <+9>:	callq  0x4014cc <read_six_numbers>  // call read_six_numbers function
+   0x000000000040105b <+14>:	cmpl   $0x1,(%rsp)                  // compare %rsp to 1
+   0x000000000040105f <+18>:	jne    0x401068 <phase_2+27>        // or bomb will explode
+   0x0000000000401061 <+20>:	cmpl   $0x2,0x4(%rsp)
+   0x0000000000401066 <+25>:	je     0x40106d <phase_2+32>
+   0x0000000000401068 <+27>:	callq  0x401496 <explode_bomb>
+   0x000000000040106d <+32>:	mov    %rsp,%rbp
+   0x0000000000401070 <+35>:	lea    0x8(%rsp),%rbx               // rsp gets incremented by 8
+   0x0000000000401075 <+40>:	add    $0x18,%rbp
+   0x0000000000401079 <+44>:	mov    -0x4(%rbx),%eax
+   0x000000000040107c <+47>:	add    -0x8(%rbx),%eax
+   0x000000000040107f <+50>:	cmp    %eax,(%rbx)                  // compare %eax to %rbx. Step until here
+   0x0000000000401081 <+52>:	je     0x401088 <phase_2+59>        // jump
+   0x0000000000401083 <+54>:	callq  0x401496 <explode_bomb>
+   0x0000000000401088 <+59>:	add    $0x4,%rbx
+   0x000000000040108c <+63>:	cmp    %rbp,%rbx                    // compare
+   0x000000000040108f <+66>:	jne    0x401079 <phase_2+44>        // or bomb will explode
+   0x0000000000401091 <+68>:	add    $0x28,%rsp
+---Type <return> to continue, or q <return> to quit---)
+
+return
+(gdb outputs:
+   0x0000000000401095 <+72>:	pop    %rbx
+   0x0000000000401096 <+73>:	pop    %rbp
+   0x0000000000401097 <+74>:	retq   
+End of assembler dump.)
+
+stepi 5
+(gdb outputs:
+0x00000000004014cc in read_six_numbers ())
+
+disassemble
+(gdb outputs:
+Dump of assembler code for function read_six_numbers:
+=> 0x00000000004014cc <+0>:	sub    $0x18,%rsp
+   0x00000000004014d0 <+4>:	mov    %rsi,%rdx
+   0x00000000004014d3 <+7>:	lea    0x4(%rsi),%rcx
+   0x00000000004014d7 <+11>:	lea    0x14(%rsi),%rax
+   0x00000000004014db <+15>:	mov    %rax,0x8(%rsp)
+   0x00000000004014e0 <+20>:	lea    0x10(%rsi),%rax
+   0x00000000004014e4 <+24>:	mov    %rax,(%rsp)
+   0x00000000004014e8 <+28>:	lea    0xc(%rsi),%r9
+   0x00000000004014ec <+32>:	lea    0x8(%rsi),%r8
+   0x00000000004014f0 <+36>:	mov    $0x402590,%esi
+   0x00000000004014f5 <+41>:	mov    $0x0,%eax
+   0x00000000004014fa <+46>:	callq  0x400ac8 <__isoc99_sscanf@plt>
+   0x00000000004014ff <+51>:	cmp    $0x5,%eax
+   0x0000000000401502 <+54>:	jg     0x401509 <read_six_numbers+61>
+   0x0000000000401504 <+56>:	callq  0x401496 <explode_bomb>
+   0x0000000000401509 <+61>:	add    $0x18,%rsp
+   0x000000000040150d <+65>:	retq   
+End of assembler dump.)
+
+(Since phase 2 should take 6 numbers, instead of “test”, I’ll try typing “10 20 30 40 50 60” instead.)
+quit
+gdb bomb
+break explode_bomb
+break phase_2
+
+(Make a txt file called “defuseBomb.txt” with this inside, including a blank 3rd line:
+I am for medical liability at the federal level.
+10 20 30 40 50 60
+)
+(Put this text file into Cyberduck into my bomb150 folder.
+Cyberduck: click “Open Connection”, select “SFTP”, type “lnxsrv.seas.ucla.edu” for Server, and my username and password, and click connect.)
+
+run defuseBomb.txt
+(gdb outputs:
+Starting program: /w/home.05/ee/ugrad/jieyun/bomb150/bomb defuseBomb.txt
+Welcome to my fiendish little bomb. You have 6 phases with
+which to blow yourself up. Have a nice day!
+Phase 1 defused. How about the next one?
+
+Breakpoint 2, 0x000000000040104d in phase_2 ())
+
+disassemble
+print/x $eax (gdb outputs: $1 = 0x603e30)
+x/s 0x603e30 (gdb outputs: 0x603e30 <input_strings+80>:	 "10 20 30 40 50 60”)
+
+Tried these, but didn’t find 6 numbers:
+(gdb) print/x $rsp
+$2 = 0x7fffffffe0d8
+(gdb) x/s 0x7fffffffe0d8
+0x7fffffffe0d8:	 "\356\r@"
+(gdb) print/x $rsi
+$3 = 0x50
+(gdb) x/s 0x50
+0x50:	 <Address 0x50 out of bounds>
+(gdb) until *0x000000000040107c
+Breakpoint 1, 0x0000000000401496 in explode_bomb ()
+
+(gdb) next
+Single stepping until exit from function explode_bomb,
+which has no line number information.
+Your instructor has been notified.
+
+Program exited with code 010.
+
+(… blew the bomb again, never use the “next” command.)
+
+quit
+gdb bomb
+break explode_bomb
+break phase_2
+run
+I am for medical liability at the federal level.
+1 2 3 4 5 6
+disassemble
+(gdb outputs:
+Dump of assembler code for function phase_2:
+=> 0x000000000040104d <+0>:	push   %rbp
+   0x000000000040104e <+1>:	push   %rbx
+   0x000000000040104f <+2>:	sub    $0x28,%rsp
+   0x0000000000401053 <+6>:	mov    %rsp,%rsi
+   0x0000000000401056 <+9>:	callq  0x4014cc <read_six_numbers>
+   0x000000000040105b <+14>:	cmpl   $0x1,(%rsp)                  // First: compare rsp to 1
+   0x000000000040105f <+18>:	jne    0x401068 <phase_2+27>        // continue if >=1, otherwise explode
+   0x0000000000401061 <+20>:	cmpl   $0x2,0x4(%rsp)
+   0x0000000000401066 <+25>:	je     0x40106d <phase_2+32>
+   0x0000000000401068 <+27>:	callq  0x401496 <explode_bomb>      // pass first bomb if first number is 1
+   0x000000000040106d <+32>:	mov    %rsp,%rbp                    // rbp = rsp. Loop
+   0x0000000000401070 <+35>:	lea    0x8(%rsp),%rbx               // rbx = 3rd number, rsp = 1st number
+   0x0000000000401075 <+40>:	add    $0x18,%rbp                   // remove the room from stack
+   0x0000000000401079 <+44>:	mov    -0x4(%rbx),%eax              // store the (rbx-1) number into eax
+   0x000000000040107c <+47>:	add    -0x8(%rbx),%eax              // eax = (rbx-2)th number + eax. Like Fibonacci sequence. Key!!!!!!!
+   0x000000000040107f <+50>:	cmp    %eax,(%rbx)                  // Second: compare rbx to eax
+   0x0000000000401081 <+52>:	je     0x401088 <phase_2+59>
+   0x0000000000401083 <+54>:	callq  0x401496 <explode_bomb>      // how to pass second bomb?
+   0x0000000000401088 <+59>:	add    $0x4,%rbx                    // rbx = (rbx+1)th number
+   0x000000000040108c <+63>:	cmp    %rbp,%rbx                    // See if it’s the last number. If so, end loop.
+   0x000000000040108f <+66>:	jne    0x401079 <phase_2+44>        // if rbx is not equal to rbp, keep looping
+   0x0000000000401091 <+68>:	add    $0x28,%rsp                   // remove the room from stack
+   0x0000000000401095 <+72>:	pop    %rbx
+   0x0000000000401096 <+73>:	pop    %rbp
+   0x0000000000401097 <+74>:	retq   
+End of assembler dump.)
+
+nth number  | value
+  1             1
+  2             eax = prev + prev’s prev = 1 + 1 = 2
+  3             eax = prev + prev’s prev = 2 + 1 = 3
+  4             eax = prev + prev’s prev = 3 + 2 = 5
+  5             eax = prev + prev’s prev = 5 + 3 = 8
+  6             eax = prev + prev’s prev = 8 + 5 = 13
+
+quit
+./bomb
+I am for medical liability at the federal level.
+1 2 3 5 8 13
+(then terminate the whole terminal window)
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                              Phase 3                                               //
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+gdb bomb
+break explode_bomb
+break phase_3
+run
+I am for medical liability at the federal level.
+1 2 3 5 8 13
+ummm
+
+disassemble
+(gdb outputs:
+Dump of assembler code for function phase_3:
+=> 0x000000000040112b <+0>:	sub    $0x18,%rsp
+   0x000000000040112f <+4>:	lea    0x7(%rsp),%rcx
+   0x0000000000401134 <+9>:	lea    0xc(%rsp),%rdx
+   0x0000000000401139 <+14>:	lea    0x8(%rsp),%r8
+   0x000000000040113e <+19>:	mov    $0x402479,%esi
+   0x0000000000401143 <+24>:	mov    $0x0,%eax
+   0x0000000000401148 <+29>:	callq  0x400ac8 <__isoc99_sscanf@plt>
+   0x000000000040114d <+34>:	cmp    $0x2,%eax
+   0x0000000000401150 <+37>:	jg     0x401157 <phase_3+44>
+   0x0000000000401152 <+39>:	callq  0x401496 <explode_bomb>
+   0x0000000000401157 <+44>:	cmpl   $0x7,0xc(%rsp)
+   0x000000000040115c <+49>:	ja     0x401240 <phase_3+277>
+   0x0000000000401162 <+55>:	mov    0xc(%rsp),%eax
+   0x0000000000401166 <+59>:	jmpq   *0x4024a0(,%rax,8)
+   0x000000000040116d <+66>:	mov    $0x6e,%eax
+   0x0000000000401172 <+71>:	cmpl   $0x80,0x8(%rsp)
+   0x000000000040117a <+79>:	je     0x401258 <phase_3+301>
+   0x0000000000401180 <+85>:	callq  0x401496 <explode_bomb>
+   0x0000000000401185 <+90>:	mov    $0x6e,%eax
+   0x000000000040118a <+95>:	jmpq   0x401258 <phase_3+301>
+   0x000000000040118f <+100>:	mov    $0x6f,%eax
+   0x0000000000401194 <+105>:	cmpl   $0xc3,0x8(%rsp)
+---Type <return> to continue, or q <return> to quit---)
+
