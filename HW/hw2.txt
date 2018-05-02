@@ -1,0 +1,19 @@
+Jie-Yun Cheng
+004460366
+
+////////////////
+// magic8ball //
+////////////////
+
+- Question: If the application were to output the value of magic8ball[3][4] – what would it be? 
+- Short answer: Wrong
+
+- Explanation: We’re looking for magic8ball[3][4], so i = 3, j = 4. For a char, it requires K = 1 byte, and C = 8. Based on the machine data slide page 12, if magic8ball is 2 dimensional, the address for magic8ball[3][4] would be:
+A + i*C*K + j*K
+= A + 3*8*1 + 4*1
+= A + 24 + 4
+= A + 28
+
+In reality, magic8ball is 3 dimensional, and the third dimension has the depth of 8. So we’ll have to check for consecutive 8 char values starting from addresses A + 28*8. There are 64 lines of addresses. The 28th line is:
+  0x7fffffffe0d8: 0x57 0x72 0x6f 0x6e 0x67 0x00 0x00 0x00
+which results in: W    r    o    n    g    NUL  NUL  NUL
