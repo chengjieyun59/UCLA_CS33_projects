@@ -313,23 +313,181 @@ Dump of assembler code for function phase_3:
    0x000000000040112f <+4>:	lea    0x7(%rsp),%rcx
    0x0000000000401134 <+9>:	lea    0xc(%rsp),%rdx
    0x0000000000401139 <+14>:	lea    0x8(%rsp),%r8
-   0x000000000040113e <+19>:	mov    $0x402479,%esi
+   0x000000000040113e <+19>:	mov    $0x402479,%esi                // check what’s at this address
    0x0000000000401143 <+24>:	mov    $0x0,%eax
    0x0000000000401148 <+29>:	callq  0x400ac8 <__isoc99_sscanf@plt>
    0x000000000040114d <+34>:	cmp    $0x2,%eax
    0x0000000000401150 <+37>:	jg     0x401157 <phase_3+44>
    0x0000000000401152 <+39>:	callq  0x401496 <explode_bomb>
-   0x0000000000401157 <+44>:	cmpl   $0x7,0xc(%rsp)
+   0x0000000000401157 <+44>:	cmpl   $0x7,0xc(%rsp)                //if first int > 7, explode. So first int <= 7
    0x000000000040115c <+49>:	ja     0x401240 <phase_3+277>
-   0x0000000000401162 <+55>:	mov    0xc(%rsp),%eax
-   0x0000000000401166 <+59>:	jmpq   *0x4024a0(,%rax,8)
-   0x000000000040116d <+66>:	mov    $0x6e,%eax
-   0x0000000000401172 <+71>:	cmpl   $0x80,0x8(%rsp)
+   0x0000000000401162 <+55>:	mov    0xc(%rsp),%eax                //eax = rsp
+   0x0000000000401166 <+59>:	jmpq   *0x4024a0(,%rax,8)            //jump table. jumps to 0x40118f if first number is 1
+   0x000000000040116d <+66>:	mov    $0x6e,%lax
+   0x0000000000401172 <+71>:	cmpl   $0x80,0x8(%rsp)               //compare 0x80 with value stored at 0x8(%rsp), 0x80 = 8*16 = 128
    0x000000000040117a <+79>:	je     0x401258 <phase_3+301>
    0x0000000000401180 <+85>:	callq  0x401496 <explode_bomb>
    0x0000000000401185 <+90>:	mov    $0x6e,%eax
-   0x000000000040118a <+95>:	jmpq   0x401258 <phase_3+301>
-   0x000000000040118f <+100>:	mov    $0x6f,%eax
-   0x0000000000401194 <+105>:	cmpl   $0xc3,0x8(%rsp)
----Type <return> to continue, or q <return> to quit---)
+   0x000000000040118a <+95>:	jmpq   0x401258 <phase_3+301>        //jumps here if the first number inputted is 1
+   0x000000000040118f <+100>:	mov    $0x6f,%eax                    //0x6f = ‘o’
+   0x0000000000401194 <+105>:	cmpl   $0xc3,0x8(%rsp)               //(rsp) + 8 = 0xc3 = 12*16+3 = 195
+   0x000000000040119c <+113>:	je     0x401258 <phase_3+301>        //if the second number equal to 195, jump to 0x401258
+   0x00000000004011a2 <+119>:	callq  0x401496 <explode_bomb>
+   0x00000000004011a7 <+124>:	mov    $0x6f,%eax
+   0x00000000004011ac <+129>:	jmpq   0x401258 <phase_3+301>        //when first input is 2
+   0x00000000004011b1 <+134>:	mov    $0x7a,%eax                    //0x7a = ‘z’
+   0x00000000004011b6 <+139>:	cmpl   $0x35,0x8(%rsp)               //0x35 = 53
+   0x00000000004011bb <+144>:	je     0x401258 <phase_3+301>
+   0x00000000004011c1 <+150>:	callq  0x401496 <explode_bomb>
+   0x00000000004011c6 <+155>:	mov    $0x7a,%eax
+   0x00000000004011cb <+160>:	jmpq   0x401258 <phase_3+301>        //when first input is 3
+   0x00000000004011d0 <+165>:	mov    $0x71,%eax                    //0x71 = ‘q’
+   0x00000000004011d5 <+170>:	cmpl   $0x2c9,0x8(%rsp)              //0x2c9 = 713
+   0x00000000004011dd <+178>:	je     0x401258 <phase_3+301>
+   0x00000000004011df <+180>:	callq  0x401496 <explode_bomb>
+   0x00000000004011e4 <+185>:	mov    $0x71,%eax                    //0x71 = ‘q’
+   0x00000000004011e9 <+190>:	jmp    0x401258 <phase_3+301>        //when first input is 4
+   0x00000000004011eb <+192>:	cmpl   $0x3ba,0x8(%rsp)              //0x3ba = 954
+   0x00000000004011f3 <+200>:	je     0x40124c <phase_3+289>
+   0x00000000004011f5 <+202>:	callq  0x401496 <explode_bomb>
+   0x00000000004011fa <+207>:	mov    $0x6b,%eax                    //0x6b = ‘k’
+   0x00000000004011ff <+212>:	jmp    0x401258 <phase_3+301>        //when first input is 5
+   0x0000000000401201 <+214>:	cmpl   $0x73,0x8(%rsp)               //0x73 = 115
+   0x0000000000401206 <+219>:	je     0x40124c <phase_3+289>
+   0x0000000000401208 <+221>:	callq  0x401496 <explode_bomb>
+   0x000000000040120d <+226>:	mov    $0x6b,%eax                    //0x6b = ‘k’
+   0x0000000000401212 <+231>:	jmp    0x401258 <phase_3+301>        //when first input is 6
+   0x0000000000401214 <+233>:	cmpl   $0x2a8,0x8(%rsp)              //0x2a8 = 680
+   0x000000000040121c <+241>:	je     0x401253 <phase_3+296>
+   0x000000000040121e <+243>:	callq  0x401496 <explode_bomb>
+   0x0000000000401223 <+248>:	mov    $0x75,%eax                    //0x75 = ‘u’
+   0x0000000000401228 <+253>:	jmp    0x401258 <phase_3+301>        //when first input is 7
+   0x000000000040122a <+255>:	cmpl   $0x2e3,0x8(%rsp)              //0x2e3 = 739
+   0x0000000000401232 <+263>:	je     0x401253 <phase_3+296>
+   0x0000000000401234 <+265>:	callq  0x401496 <explode_bomb>
+   0x0000000000401239 <+270>:	mov    $0x75,%eax                    //0x75 = ‘u’
+   0x000000000040123e <+275>:	jmp    0x401258 <phase_3+301>
+   0x0000000000401240 <+277>:	callq  0x401496 <explode_bomb>
+   0x0000000000401245 <+282>:	mov    $0x64,%eax                    //0x64 = ‘d’
+   0x000000000040124a <+287>:	jmp    0x401258 <phase_3+301>
+   0x000000000040124c <+289>:	mov    $0x6b,%eax                    //0x6b = ‘k’
+   0x0000000000401251 <+294>:	jmp    0x401258 <phase_3+301>
+   0x0000000000401253 <+296>:	mov    $0x75,%eax                   // 0x75 = ‘u’
+   0x0000000000401258 <+301>:	cmp    0x7(%rsp),%al                // jumped here. so char is the value in %al
+   0x000000000040125c <+305>:	je     0x401263 <phase_3+312>
+   0x000000000040125e <+307>:	callq  0x401496 <explode_bomb>
+   0x0000000000401263 <+312>:	add    $0x18,%rsp
+   0x0000000000401267 <+316>:	retq   
+End of assembler dump.
+
+// THE FORMAT IS THE SECOND TO LAST ARGUMENT TO SSCANF
+(gdb) x/s 0x402479
+0x402479 <__dso_handle+433>:	 "%d %c %d" // so it’s a decimal number, then a char, then a decimal number
+
+quit gdb and try this input string: 1 a 195
+
+(gdb) p/x $eax
+$1 = 0x603e80
+(gdb) x/s 0x603e80
+0x603e80 <input_strings+160>:	 "1 a 195"
+
+(gdb) p/x $al
+$2 = 0x80
+(gdb) x/s 0x80
+0x80:	 <Address 0x80 out of bounds>
+
+// LETS PRINT THE JUMP TABLE  (I ADDED SPACES TO THE DISAS ABOVE TO SHOW THE TABLE)
+(gdb) b *0x0000000000401166
+Breakpoint 3 at 0x401166
+(gdb) c
+Continuing.
+
+Breakpoint 3, 0x0000000000401166 in phase_3 ()
+(gdb) x/8x 0x4024a0
+0x4024a0 <__dso_handle+472>:	0x6d	0x11	0x40	0x00	0x00	0x00	0x00	0x00
+(gdb) x/8a 0x4024a0
+0x4024a0 <__dso_handle+472>:	0x40116d <phase_3+66>	0x40118f <phase_3+100>
+0x4024b0 <__dso_handle+488>:	0x4011b1 <phase_3+134>	0x4011d0 <phase_3+165>
+0x4024c0 <__dso_handle+504>:	0x4011eb <phase_3+192>	0x401201 <phase_3+214>
+0x4024d0 <__dso_handle+520>:	0x401214 <phase_3+233>	0x40122a <phase_3+255>
+
+// Since my first integer was 1, it should go to address 0x40118f <phase_3+100> according to the jump table
+(gdb) si
+0x000000000040118f in phase_3 ()
+
+Now I know one working answer would be “1 char 195”, where “char” is a letter.
+p/x $al prints 0x80, which doesn’t translate to a char.
+Since p/x $al didn’t work, try p/x $rsp
+(gdb) p/x $rsp
+$1 = 0x7fffffffe0e8
+0xe8 also didn’t work.
+Check the lines before that.
+eax = 0x75, so the char should be ‘u’.
+
+Try answer:
+1 u 195
+
+quit
+./bomb
+I am for medical liability at the federal level.
+1 2 3 5 8 13
+1 u 195
+(then terminate the whole terminal window)
+BOOM!!!
+The bomb has blown up.
+Your instructor has been notified.
+
+Try: 1 o 195
+Worked!
+There should be 7 answers that would work:
+1 o 195
+2 z 53
+3 q 713
+4 q 954
+5 k 115
+6 k 680
+7 u 739
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                              Phase 4                                               //
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+gdb bomb
+break explode_bomb
+break phase_4
+run
+I am for medical liability at the federal level.
+1 2 3 5 8 13
+1 o 195
+9
+disassemble
+
+Dump of assembler code for function phase_4:
+=> 0x00000000004010d8 <+0>:	sub    $0x18,%rsp
+   0x00000000004010dc <+4>:	lea    0xc(%rsp),%rcx
+   0x00000000004010e1 <+9>:	lea    0x8(%rsp),%rdx
+   0x00000000004010e6 <+14>:	mov    $0x40259c,%esi
+   0x00000000004010eb <+19>:	mov    $0x0,%eax
+   0x00000000004010f0 <+24>:	callq  0x400ac8 <__isoc99_sscanf@plt>
+   0x00000000004010f5 <+29>:	cmp    $0x2,%eax
+   0x00000000004010f8 <+32>:	jne    0x401108 <phase_4+48>
+   0x00000000004010fa <+34>:	mov    0xc(%rsp),%eax
+   0x00000000004010fe <+38>:	cmp    $0x1,%eax
+   0x0000000000401101 <+41>:	jle    0x401108 <phase_4+48>
+   0x0000000000401103 <+43>:	cmp    $0x4,%eax
+   0x0000000000401106 <+46>:	jle    0x40110d <phase_4+53>
+   0x0000000000401108 <+48>:	callq  0x401496 <explode_bomb>
+   0x000000000040110d <+53>:	mov    0xc(%rsp),%esi
+   0x0000000000401111 <+57>:	mov    $0x6,%edi
+   0x0000000000401116 <+62>:	callq  0x400e70 <func4>
+   0x000000000040111b <+67>:	cmp    0x8(%rsp),%eax
+   0x000000000040111f <+71>:	je     0x401126 <phase_4+78>
+   0x0000000000401121 <+73>:	callq  0x401496 <explode_bomb>
+   0x0000000000401126 <+78>:	add    $0x18,%rsp
+   0x000000000040112a <+82>:	retq   
+---Type <return> to continue, or q <return> to quit---return
+End of assembler dump.
+
+
 
