@@ -567,6 +567,248 @@ run // automatically finishes previous phases that I already defused
 60 3
 continue
 So you got that one.  Try this one.
+// Now save “60 3” in the next line in bombDefusingAns.txt
+// Upload through Cyberduck
 
+quit
+./bomb
+I am for medical liability at the federal level.
+1 2 3 5 8 13
+1 o 195
+60 3
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                              Phase 5                                               //
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+gdb bomb
+break explode_bomb
+break phase_5
+run bombDefusingAns.txt
+abcdef
+disassemble
+
+Dump of assembler code for function phase_5:
+=> 0x0000000000401098 <+0>:	push   %rbx
+   0x0000000000401099 <+1>:	mov    %rdi,%rbx                 // rbx = rbi
+   0x000000000040109c <+4>:	callq  0x401290 <string_length>  // call function string_length
+   0x00000000004010a1 <+9>:	cmp    $0x6,%eax                 // input string eax needs to be of size 6. Try “abcdef”
+   0x00000000004010a4 <+12>:	je     0x4010ab <phase_5+19>     // jump to [1] if equal
+   0x00000000004010a6 <+14>:	callq  0x401496 <explode_bomb>
+   0x00000000004010ab <+19>:	lea    0x6(%rbx),%rsi            // [1] 
+   0x00000000004010af <+23>:	mov    $0x0,%eax                 // eax = 0
+   0x00000000004010b4 <+28>:	mov    $0x4024e0,%edx            // 
+   0x00000000004010b9 <+33>:	movsbq (%rbx),%rcx               // [2] LOOP STARTS HERE
+   0x00000000004010bd <+37>:	and    $0xf,%ecx                 // perform binary AND operation between 0xf and ecx
+   0x00000000004010c0 <+40>:	add    (%rdx,%rcx,4),%eax        // perform binary AND operation between rcx*4+rdx and eax
+   0x00000000004010c3 <+43>:	add    $0x1,%rbx                 // rbx = rbx + 1
+   0x00000000004010c7 <+47>:	cmp    %rsi,%rbx                 // compare rbx to rsi
+   0x00000000004010ca <+50>:	jne    0x4010b9 <phase_5+33>     // jump to [2] if not equal. LOOP ENDS HERE
+   0x00000000004010cc <+52>:	cmp    $0x45,%eax                // compare eax to 0x45 = 69
+   0x00000000004010cf <+55>:	je     0x4010d6 <phase_5+62>     // jump to AFTER explode_bomb if equal
+   0x00000000004010d1 <+57>:	callq  0x401496 <explode_bomb>
+   0x00000000004010d6 <+62>:	pop    %rbx
+   0x00000000004010d7 <+63>:	retq   
+End of assembler dump.
+
+// check if eax is indeed the register containing the input string
+(gdb) p/x $eax
+$1 = 0x603f20
+(gdb) x/s 0x603f20
+0x603f20 <input_strings+320>:	 "abcdef"
+
+// Step to right before the loop
+(gdb) until *0x4010b4
+
+(gdb) stepi 5
+0x00000000004010c7 in phase_5 ()
+(gdb) disas
+Dump of assembler code for function phase_5:
+   0x0000000000401098 <+0>:	push   %rbx
+   0x0000000000401099 <+1>:	mov    %rdi,%rbx
+   0x000000000040109c <+4>:	callq  0x401290 <string_length>
+   0x00000000004010a1 <+9>:	cmp    $0x6,%eax
+   0x00000000004010a4 <+12>:	je     0x4010ab <phase_5+19>
+   0x00000000004010a6 <+14>:	callq  0x401496 <explode_bomb>
+   0x00000000004010ab <+19>:	lea    0x6(%rbx),%rsi
+   0x00000000004010af <+23>:	mov    $0x0,%eax
+   0x00000000004010b4 <+28>:	mov    $0x4024e0,%edx
+   0x00000000004010b9 <+33>:	movsbq (%rbx),%rcx
+   0x00000000004010bd <+37>:	and    $0xf,%ecx
+   0x00000000004010c0 <+40>:	add    (%rdx,%rcx,4),%eax
+   0x00000000004010c3 <+43>:	add    $0x1,%rbx
+=> 0x00000000004010c7 <+47>:	cmp    %rsi,%rbx
+   0x00000000004010ca <+50>:	jne    0x4010b9 <phase_5+33>
+   0x00000000004010cc <+52>:	cmp    $0x45,%eax
+   0x00000000004010cf <+55>:	je     0x4010d6 <phase_5+62>
+   0x00000000004010d1 <+57>:	callq  0x401496 <explode_bomb>
+   0x00000000004010d6 <+62>:	pop    %rbx
+   0x00000000004010d7 <+63>:	retq   
+End of assembler dump.
+
+(gdb) i r
+rax            0x6	6
+rbx            0x603f21	6307617
+rcx            0x1	1                    // first letter ‘a’ gives 0x1 = 1
+rdx            0x4024e0	4203744
+rsi            0x603f26	6307622
+rdi            0x603f20	6307616
+rbp            0x7fffffffe1d0	0x7fffffffe1d0
+rsp            0x7fffffffe0c0	0x7fffffffe0c0
+r8             0x380bf906b0	240719038128
+r9             0x7ffff7fd4700	140737353959168
+r10            0x22	34
+r11            0x246	582
+r12            0x400c50	4197456
+r13            0x7fffffffe1c0	140737488347584
+r14            0x0	0
+r15            0x0	0
+rip            0x4010c7	0x4010c7 <phase_5+47>
+eflags         0x206	[ PF IF ]
+cs             0x33	51
+ss             0x2b	43
+ds             0x0	0
+es             0x0	0
+fs             0x0	0
+gs             0x0	0
+
+(gdb) stepi 6
+0x00000000004010c7 in phase_5 ()
+(gdb) i r
+rax            0x10	16
+rbx            0x603f22	6307618
+rcx            0x2	2                    // second letter ‘b’ gives 0x2 = 2
+rdx            0x4024e0	4203744
+rsi            0x603f26	6307622
+rdi            0x603f20	6307616
+rbp            0x7fffffffe1d0	0x7fffffffe1d0
+rsp            0x7fffffffe0c0	0x7fffffffe0c0
+r8             0x380bf906b0	240719038128
+r9             0x7ffff7fd4700	140737353959168
+r10            0x22	34
+r11            0x246	582
+r12            0x400c50	4197456
+r13            0x7fffffffe1c0	140737488347584
+r14            0x0	0
+r15            0x0	0
+rip            0x4010c7	0x4010c7 <phase_5+47>
+eflags         0x206	[ PF IF ]
+cs             0x33	51
+ss             0x2b	43
+ds             0x0	0
+es             0x0	0
+fs             0x0	0
+gs             0x0	0
+
+(gdb) stepi 6
+0x00000000004010c7 in phase_5 ()
+(gdb) i r $rcx
+rcx            0x3	3                    // ‘c’ gives 0x3 = 3
+(gdb) stepi 6
+0x00000000004010c7 in phase_5 ()
+(gdb) i r $rcx
+rcx            0x4	4                    // ‘d’ gives 0x4 = 4
+(gdb) stepi 6
+0x00000000004010c7 in phase_5 ()
+(gdb) i r $rcx
+rcx            0x5	5                    // ‘e’ gives 0x5 = 5
+(gdb) stepi 6
+0x00000000004010c7 in phase_5 ()
+(gdb) i r $rcx
+rcx            0x6	6                    // ‘f’ gives 0x6 = 6
+(gdb) stepi 6
+Breakpoint 1, 0x0000000000401496 in explode_bomb ()
+
+kill
+run
+ghijkl
+until *0x4010c7
+// do the two commands below and record each alphabet that maps to each decimal number
+i r $rcx
+stepi 6
+
+a = 1
+b = 2
+c = 3
+d = 4
+e = 5
+f = 6
+g = 7
+h = 8
+i = 9
+j = 10
+k = 11
+l = 12
+. . .
+u = 5
+v = 6
+w = 7
+x = 8
+y = 9 = 25%16
+z = 10 = 26%16
+
+The number repeats every 16 alphabets.
+
+Sum to 69
+69 = 11*5 + 14
+= eeeeen
+
+// “eeeeen” didn’t work. Try looking at eax value when it’s being compared to 0x45.
+kill
+y
+run
+eeeeen
+until *0x4010cc
+i r $eax
+eax            0x5f	95
+
+so eeeeen gives 95, instead of 69.
+
+Seems like the real value for each alphabet wasn’t like that. Then find the actual value to each alphabet creates after going through the loop 6 times.
+Try aaaaaa instead.
+aaaaaa = 36 = 6 * 6
+Maybe it’s multiplying value 1 by 6, and adding that repeatedly by 6 times.
+
+bbbbbb = 60 = 6 * 10
+So for each of the 6 loops, 2 may be changed to 10?
+
+cccccc = 6 = 6 * 1
+
+dddddd = 72 = 6 * 12
+
+eeeeee = 96 = 6 * 16
+
+ffffff = 54 = 6 * 9
+
+Now there should be enough numbers that add to 60. Find a combination of letters that add to 69.
+16 + 16 + 16 + 6 + 6 + 9 = 69
+e    e    e    a   a   f
+
+Worked!
+
+// Now save “eeeaaf” in the next line in bombDefusingAns.txt
+// Upload through Cyberduck
+
+quit
+y
+./bomb
+I am for medical liability at the federal level.
+1 2 3 5 8 13
+1 o 195
+60 3
+eeeaaf
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                              Phase 6                                               //
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+gdb bomb
+break explode_bomb
+break phase_6
+run bombDefusingAns.txt
+
+disassemble
 
 
