@@ -456,38 +456,117 @@ There should be 7 answers that would work:
 gdb bomb
 break explode_bomb
 break phase_4
-run
-I am for medical liability at the federal level.
-1 2 3 5 8 13
-1 o 195
-9
+run bombDefusingAns.txt
+60 3
 disassemble
 
 Dump of assembler code for function phase_4:
 => 0x00000000004010d8 <+0>:	sub    $0x18,%rsp
    0x00000000004010dc <+4>:	lea    0xc(%rsp),%rcx
    0x00000000004010e1 <+9>:	lea    0x8(%rsp),%rdx
-   0x00000000004010e6 <+14>:	mov    $0x40259c,%esi
+   0x00000000004010e6 <+14>:	mov    $0x40259c,%esi                  // check what form the input should be
    0x00000000004010eb <+19>:	mov    $0x0,%eax
    0x00000000004010f0 <+24>:	callq  0x400ac8 <__isoc99_sscanf@plt>
-   0x00000000004010f5 <+29>:	cmp    $0x2,%eax
-   0x00000000004010f8 <+32>:	jne    0x401108 <phase_4+48>
-   0x00000000004010fa <+34>:	mov    0xc(%rsp),%eax
-   0x00000000004010fe <+38>:	cmp    $0x1,%eax
-   0x0000000000401101 <+41>:	jle    0x401108 <phase_4+48>
-   0x0000000000401103 <+43>:	cmp    $0x4,%eax
-   0x0000000000401106 <+46>:	jle    0x40110d <phase_4+53>
+   0x00000000004010f5 <+29>:	cmp    $0x2,%eax                       // check if my input string is in %eax. eax cannot be 2
+   0x00000000004010f8 <+32>:	jne    0x401108 <phase_4+48>           // jump to explode bomb, if the input doesn’t have 2 values
+   0x00000000004010fa <+34>:	mov    0xc(%rsp),%eax                  // eax = rsp
+   0x00000000004010fe <+38>:	cmp    $0x1,%eax                       // compare eax to 1
+   0x0000000000401101 <+41>:	jle    0x401108 <phase_4+48>           // jump to explode bomb if eax <= 1
+   0x0000000000401103 <+43>:	cmp    $0x4,%eax                       // compare eax to 4
+   0x0000000000401106 <+46>:	jle    0x40110d <phase_4+53>           // jump to AFTER explode bomb if eax <= 4
    0x0000000000401108 <+48>:	callq  0x401496 <explode_bomb>
-   0x000000000040110d <+53>:	mov    0xc(%rsp),%esi
-   0x0000000000401111 <+57>:	mov    $0x6,%edi
-   0x0000000000401116 <+62>:	callq  0x400e70 <func4>
-   0x000000000040111b <+67>:	cmp    0x8(%rsp),%eax
-   0x000000000040111f <+71>:	je     0x401126 <phase_4+78>
+   0x000000000040110d <+53>:	mov    0xc(%rsp),%esi                  // esi = rsp = a1, second parameter taken in by func4
+   0x0000000000401111 <+57>:	mov    $0x6,%edi                       // edi = 6, first parameter taken in by func4
+   0x0000000000401116 <+62>:	callq  0x400e70 <func4>                // call function func4 with parameters a1, 6
+   0x000000000040111b <+67>:	cmp    0x8(%rsp),%eax                  // now compare eax to rsp. eax must be the value returned by func4
+   0x000000000040111f <+71>:	je     0x401126 <phase_4+78>           // jump to AFTER explode bomb if eax = rsp
    0x0000000000401121 <+73>:	callq  0x401496 <explode_bomb>
    0x0000000000401126 <+78>:	add    $0x18,%rsp
    0x000000000040112a <+82>:	retq   
 ---Type <return> to continue, or q <return> to quit---return
 End of assembler dump.
+
+(gdb) x/s 0x40259c
+0x40259c:	 "%d %d"
+// the input should be 2 numbers. Input “9 16” instead
+(gdb) p/x $eax
+$1 = 0x603ed0
+(gdb) x/s 0x603ed0
+0x603ed0 <input_strings+240>:	 "9 16"
+// going through the assembly code, the first number eax must be 3 or 4
+// try input “3 16”
+
+// See what value is in rsp to guess what the final eax is
+(gdb) p/x $rsp
+$2 = 0x7fffffffe0e8
+(gdb) x/s 0x7fffffffe0e8
+0x7fffffffe0e8:	 "&\016@"
+// No clue was given
+// step through the code
+ni
+// but hit the first explode_bomb break point, so quit gdb
+// Try exchanging the first and second number. Now try “16 3”
+// Now it passes the first check!
+
+// Try to look into func4 by setting a breakpoint there
+(gdb) b *0x0000000000401116
+Breakpoint 3 at 0x401116
+// keep stepping through the code multiple times until hitting func4
+ni
+// note: “ni” doesn’t go into a function, “si” goes into a function
+(gdb) until *0x0000000000401116
+Breakpoint 3, 0x0000000000401116 in phase_4 ()
+(gdb) si
+0x0000000000400e70 in func4 ()
+(gdb) si
+0x0000000000400e75 in func4 ()
+(gdb) disassemble
+Dump of assembler code for function func4:
+   0x0000000000400e70 <+0>:	mov    %rbx,-0x18(%rsp)       // (rsp-18) = rbx
+=> 0x0000000000400e75 <+5>:	mov    %rbp,-0x10(%rsp)       // (rsp-10) = rap
+   0x0000000000400e7a <+10>:	mov    %r12,-0x8(%rsp)        // (rsp-8) = r12
+   0x0000000000400e7f <+15>:	sub    $0x18,%rsp             // rsp = rsp - 0x18 = rsp - 24
+   0x0000000000400e83 <+19>:	mov    %edi,%ebx              // ebx = edi
+   0x0000000000400e85 <+21>:	mov    %esi,%ebp              // ebp = esi
+   0x0000000000400e87 <+23>:	test   %edi,%edi              // if edi = 0?
+   0x0000000000400e89 <+25>:	jg     0x400e92 <func4+34>    // jump to [1]0x400e92 when greater than
+   0x0000000000400e8b <+27>:	mov    $0x0,%ebp              // ebp = 0
+   0x0000000000400e90 <+32>:	jmp    0x400eb2 <func4+66>    // jump to [2]
+   0x0000000000400e92 <+34>:	cmp    $0x1,%edi              // [1] compare edi to 1
+   0x0000000000400e95 <+37>:	je     0x400eb2 <func4+66>    // jump to [2] if edi = 1
+   0x0000000000400e97 <+39>:	lea    -0x1(%rbx),%edi        // copy edi’s address into rbi’s address
+   0x0000000000400e9a <+42>:	callq  0x400e70 <func4>       // call func4 recursively
+   0x0000000000400e9f <+47>:	mov    %eax,%r12d             // r12d = eax
+   0x0000000000400ea2 <+50>:	lea    -0x2(%rbx),%edi        // copy edi’s address into rbx’s address
+   0x0000000000400ea5 <+53>:	mov    %ebp,%esi              // esi = ebp
+   0x0000000000400ea7 <+55>:	callq  0x400e70 <func4>       // call func4 recursively
+   0x0000000000400eac <+60>:	add    %eax,%r12d             // r12d = r12d + eax
+   0x0000000000400eaf <+63>:	add    %r12d,%ebp             // ebp = ebp + r12d
+   0x0000000000400eb2 <+66>:	mov    %ebp,%eax              // [2] eax = ebp
+   0x0000000000400eb4 <+68>:	mov    (%rsp),%rbx            // rbx = rsp
+   0x0000000000400eb8 <+72>:	mov    0x8(%rsp),%rbp         // rbp = rsp
+   0x0000000000400ebd <+77>:	mov    0x10(%rsp),%r12        // r12 = rsp
+   0x0000000000400ec2 <+82>:	add    $0x18,%rsp             // rsp = rsp + 0x18 = rsp + 24
+   0x0000000000400ec6 <+86>:	retq   
+End of assembler dump.
+
+// Since I know what parameter values go into the function, 
+// I don’t necessarily have to figure out what the function does.
+// I just need to know what it returns, and that will be the first number.
+// retry with “16 3” and disassemble
+(gdb) until *0x0000000000401111
+0x0000000000401111 in phase_4 ()
+(gdb) p/x $esi
+$1 = 0x3
+(gdb) p func4(6, 3)
+$2 = 60
+// 60 is the number returned
+
+kill // using this keeps all the breakpoints. Better than “quit” in this case
+run // automatically finishes previous phases that I already defused
+60 3
+continue
+So you got that one.  Try this one.
 
 
 
