@@ -781,7 +781,7 @@ eeeeee = 96 = 6 * 16
 
 ffffff = 54 = 6 * 9
 
-Now there should be enough numbers that add to 60. Find a combination of letters that add to 69.
+Now there should be enough numbers that add to 69. Find a combination of letters that add to 69.
 16 + 16 + 16 + 6 + 6 + 9 = 69
 e    e    e    a   a   f
 
@@ -808,7 +808,304 @@ gdb bomb
 break explode_bomb
 break phase_6
 run bombDefusingAns.txt
-
+1 2 3 4 5 6
 disassemble
+
+Dump of assembler code for function phase_6:
+=> 0x0000000000400f52 <+0>:	push   %r12
+   0x0000000000400f54 <+2>:	push   %rbp
+   0x0000000000400f55 <+3>:	push   %rbx
+   0x0000000000400f56 <+4>:	sub    $0x50,%rsp
+   0x0000000000400f5a <+8>:	lea    0x30(%rsp),%rbp
+   0x0000000000400f5f <+13>:	mov    %rbp,%rsi
+   0x0000000000400f62 <+16>:	callq  0x4014cc <read_six_numbers>     // need to input 6 numbers
+
+   0x0000000000400f67 <+21>:	mov    $0x0,%r12d
+   0x0000000000400f6d <+27>:	mov    0x0(%rbp),%eax
+   0x0000000000400f70 <+30>:	sub    $0x1,%eax
+   0x0000000000400f73 <+33>:	cmp    $0x5,%eax                       // the 6 numbers should all be <= 6
+   0x0000000000400f76 <+36>:	jbe    0x400f7d <phase_6+43>           // if not, bomb will explode
+   0x0000000000400f78 <+38>:	callq  0x401496 <explode_bomb>
+
+   0x0000000000400f7d <+43>:	add    $0x1,%r12d
+   0x0000000000400f81 <+47>:	cmp    $0x6,%r12d
+   0x0000000000400f85 <+51>:	je     0x400fa9 <phase_6+87>
+   0x0000000000400f87 <+53>:	mov    %r12d,%ebx
+   0x0000000000400f8a <+56>:	movslq %ebx,%rax
+   0x0000000000400f8d <+59>:	mov    0x0(%rbp),%edx
+   0x0000000000400f90 <+62>:	cmp    0x30(%rsp,%rax,4),%edx          // make sure no 2 numbers are the same
+   0x0000000000400f94 <+66>:	jne    0x400f9b <phase_6+73>           // if not, bomb will explode
+   0x0000000000400f96 <+68>:	callq  0x401496 <explode_bomb>
+
+   0x0000000000400f9b <+73>:	add    $0x1,%ebx                       // increment the count
+   0x0000000000400f9e <+76>:	cmp    $0x5,%ebx                       // loops 6 times
+   0x0000000000400fa1 <+79>:	jle    0x400f8a <phase_6+56>
+   0x0000000000400fa3 <+81>:	add    $0x4,%rbp
+   0x0000000000400fa7 <+85>:	jmp    0x400f6d <phase_6+27>
+   0x0000000000400fa9 <+87>:	mov    $0x0,%ebx
+   0x0000000000400fae <+92>:	lea    0x30(%rsp),%r8
+   0x0000000000400fb3 <+97>:	mov    $0x1,%ebp
+   0x0000000000400fb8 <+102>:	mov    $0x6037b0,%esi                  // Check this address. 0x6037b0. Probably the address of the first node.
+   0x0000000000400fbd <+107>:	mov    %rsp,%rdi
+   0x0000000000400fc0 <+110>:	jmp    0x400fdb <phase_6+137>
+   0x0000000000400fc2 <+112>:	mov    0x8(%rdx),%rdx
+   0x0000000000400fc6 <+116>:	add    $0x1,%eax
+   0x0000000000400fc9 <+119>:	cmp    %ecx,%eax
+   0x0000000000400fcb <+121>:	jne    0x400fc2 <phase_6+112>
+   0x0000000000400fcd <+123>:	mov    %rdx,(%rdi,%rbx,2)
+   0x0000000000400fd1 <+127>:	add    $0x4,%rbx
+   0x0000000000400fd5 <+131>:	cmp    $0x18,%rbx
+   0x0000000000400fd9 <+135>:	je     0x400feb <phase_6+153>
+   0x0000000000400fdb <+137>:	mov    (%r8,%rbx,1),%ecx
+   0x0000000000400fdf <+141>:	mov    %ebp,%eax
+   0x0000000000400fe1 <+143>:	mov    %rsi,%rdx
+   0x0000000000400fe4 <+146>:	cmp    $0x1,%ecx
+   0x0000000000400fe7 <+149>:	jg     0x400fc2 <phase_6+112>
+   0x0000000000400fe9 <+151>:	jmp    0x400fcd <phase_6+123>
+   0x0000000000400feb <+153>:	mov    (%rsp),%rbx
+   0x0000000000400fef <+157>:	mov    0x8(%rsp),%rax
+   0x0000000000400ff4 <+162>:	mov    %rax,0x8(%rbx)
+   0x0000000000400ff8 <+166>:	mov    0x10(%rsp),%rdx
+   0x0000000000400ffd <+171>:	mov    %rdx,0x8(%rax)
+   0x0000000000401001 <+175>:	mov    0x18(%rsp),%rax
+   0x0000000000401006 <+180>:	mov    %rax,0x8(%rdx)
+   0x000000000040100a <+184>:	mov    0x20(%rsp),%rdx
+   0x000000000040100f <+189>:	mov    %rdx,0x8(%rax)
+   0x0000000000401013 <+193>:	mov    0x28(%rsp),%rax
+   0x0000000000401018 <+198>:	mov    %rax,0x8(%rdx)
+   0x000000000040101c <+202>:	movq   $0x0,0x8(%rax)
+   0x0000000000401024 <+210>:	mov    $0x0,%ebp
+   0x0000000000401029 <+215>:	mov    0x8(%rbx),%rax                 // LOOP STARTS HERE
+   0x000000000040102d <+219>:	mov    (%rbx),%edx                    // edx = rbx
+   0x000000000040102f <+221>:	cmp    (%rax),%edx                    // make sure that edx >= rax
+   0x0000000000401031 <+223>:	jge    0x401038 <phase_6+230>         // so that bomb will not explode
+   0x0000000000401033 <+225>:	callq  0x401496 <explode_bomb>
+
+   0x0000000000401038 <+230>:	mov    0x8(%rbx),%rbx                 // go to the next element
+   0x000000000040103c <+234>:	add    $0x1,%ebp                      // increment the count
+   0x000000000040103f <+237>:	cmp    $0x5,%ebp                      // loop 6 times
+   0x0000000000401042 <+240>:	jne    0x401029 <phase_6+215>         // LOOP ENDS HERE
+   0x0000000000401044 <+242>:	add    $0x50,%rsp
+   0x0000000000401048 <+246>:	pop    %rbx
+   0x0000000000401049 <+247>:	pop    %rbp
+   0x000000000040104a <+248>:	pop    %r12
+   0x000000000040104c <+250>:	retq   
+End of assembler dump.
+
+// There are 3 explode_bomb instances. To pass through the first 2, based on reasoning annotated above, the input should be the numbers 1 2 3 4 5 6 in a certain order. So there are currently 6! = 720 possibilities. Reasoning up till the 3rd explode_bomb may offer some insight about the order.
+
+// Try to see what was being compared right before the 3rd explode_bomb.
+// From lines <+219> and <+221>, I can tell that rbx needs to >= rax. 
+until *0x40102f
+i r
+
+rax            0x6037a0	6305696                    // first value compared
+rbx            0x6037b0	6305712                    // second value compared
+rcx            0x6	6
+rdx            0x6f	111
+rsi            0x6037b0	6305712
+rdi            0x7fffffffe060	140737488347232
+rbp            0x0	0x0
+rsp            0x7fffffffe060	0x7fffffffe060
+r8             0x7fffffffe090	140737488347280
+r9             0x100	256
+r10            0xb	11
+r11            0xb	11
+r12            0x6	6
+r13            0x7fffffffe1c0	140737488347584
+r14            0x0	0
+r15            0x0	0
+rip            0x40102f	0x40102f <phase_6+221>
+eflags         0x246	[ PF ZF IF ]
+cs             0x33	51
+ss             0x2b	43
+ds             0x0	0
+es             0x0	0
+fs             0x0	0
+gs             0x0	0
+
+// So for an input of “1 2 3 4 5 6”, rbx > rax, so it wouldn’t pass the 3rd conditional check to jump to after the bomb.
+// Check the values in rbx. And make sure that whatever comes next in the loop, the value is always getting smaller.
+
+(gdb) x/3x $rbx
+0x6037b0 <node1>:	0x6f	0x00	0x00
+(gdb) x/3x *($rbx + 8)
+0x6037a0 <node2>:	0xa1	0x00	0x00
+(gdb) x/3x *(*($rbx + 8) + 8)
+0x603790 <node3>:	0x10	0x01	0x00
+(gdb) x/3x *(*(*($rbx + 8) + 8) + 8)
+0x603780 <node4>:	0xb2	0x01	0x00
+(gdb) x/3x *(*(*(*($rbx + 8) + 8) + 8) + 8)
+0x603770 <node5>:	0x05	0x02	0x00
+(gdb) x/3x *(*(*(*(*($rbx + 8) + 8) + 8) + 8) + 8)
+0x603760 <node6>:	0xeb	0x00	0x00
+
+// So <node1> to <node6> have the addresses 0x6f to 0xeb. Put them in order from largest to smallest.
+0xeb <node6>
+0xb2 <node4>
+0xa1 <node2>
+0x6f <node1>
+0x10 <node3>
+0x05 <node5>
+
+// Try 6 4 2 1 3 5 as input string. Found out that whatever the order. These 6 addresses listed above for each node remain the same.
+kill
+y
+run
+6 4 2 1 3 5
+until *0x40102f
+i r
+
+rax            0x603780	6305664
+rbx            0x603760	6305632
+// Step through with “si”, but didn’t pass the first iteration of explode bomb.
+
+// Try to reverse the order.
+5 3 1 2 4 6
+(gdb) i r
+rax            0x603790	6305680
+rbx            0x603770	6305648
+// Step through, but didn’t pass the 3rd iteration of explode bomb. So 5 3 are in correct order. So now I know for the node values, 5 > 3 and 4 > 6.
+
+// Try 5 4 3 1 2 6
+// Step through, but didn’t pass the 4th iteration of explode bomb. So 5 4 3 are in correct order. So now I know for the node values, 5 > 4 > 3 and 4 > 6.
+
+// Try 5 4 1 3 2 6. Didn’t pass the 3rd iteration. 
+// Try 5 1 4 3 2 6. Didn’t pass the 2nd iteration.
+// Try 1 5 4 3 2 6. Didn’t pass the 1st iteration.
+
+// Weird. Maybe there’s overflow of addresses?
+0x05 <node5>
+0x10 <node3>
+0x6f <node1>
+0xa1 <node2>
+0xb2 <node4>
+0xeb <node6>
+
+
+
+Try 1 2 3 4 5 6
+Try 4 3 2 1 5 6
+
+For 1:
+i r
+rax            0x6037a0	6305696
+rbx            0x6037b0	6305712
+
+For 2:
+rax            0x6037b0	6305712
+rbx            0x6037a0	6305696
+
+For 3:
+rax            0x6037a0	6305696
+rbx            0x603790	6305680
+
+For 4:
+rax            0x603790	6305680
+rbx            0x603780	6305664
+
+For 5:
+rax            0x603790	6305680
+rbx            0x603770	6305648
+
+For 6:
+rax            0x603780	6305664
+rbx            0x603760	6305632
+
+// Sort from highest to lowest value
+
+
+6305712, 2
+
+
+
+
+1 111
+2 -95
+3 16
+4 -78
+5 5
+6 -21
+
+1 3 5 6 4 2
+
+x/64bx 0x
+
+until *0x40102f
+0x000000000040102f in phase_6 ()
+(gdb) i r
+rax            0x603780	6305664
+rbx            0x603770	6305648
+rcx            0x1	1
+rdx            0x205	517
+rsi            0x6037b0	6305712
+rdi            0x7fffffffe060	140737488347232
+rbp            0x0	0x0
+rsp            0x7fffffffe060	0x7fffffffe060
+r8             0x7fffffffe090	140737488347280
+r9             0x100	256
+r10            0xb	11
+r11            0xb	11
+r12            0x6	6
+r13            0x7fffffffe1c0	140737488347584
+r14            0x0	0
+r15            0x0	0
+rip            0x40102f	0x40102f <phase_6+221>
+eflags         0x246	[ PF ZF IF ]
+cs             0x33	51
+ss             0x2b	43
+ds             0x0	0
+es             0x0	0
+fs             0x0	0
+gs             0x0	0
+
+(gdb) x/64bx 0x603770
+0x603770 <node5>:	0x05	0x02	0x00	0x00	0x05	0x00	0x00	0x00
+0x603778 <node5+8>:	0x80	0x37	0x60	0x00	0x00	0x00	0x00	0x00
+0x603780 <node4>:	0xb2	0x01	0x00	0x00	0x04	0x00	0x00	0x00
+0x603788 <node4+8>:	0x90	0x37	0x60	0x00	0x00	0x00	0x00	0x00
+0x603790 <node3>:	0x10	0x01	0x00	0x00	0x03	0x00	0x00	0x00
+0x603798 <node3+8>:	0x60	0x37	0x60	0x00	0x00	0x00	0x00	0x00
+0x6037a0 <node2>:	0xa1	0x00	0x00	0x00	0x02	0x00	0x00	0x00
+0x6037a8 <node2+8>:	0xb0	0x37	0x60	0x00	0x00	0x00	0x00	0x00
+(gdb) x/8bx 0x603760
+0x603760 <node6>:	0xeb	0x00	0x00	0x00	0x06	0x00	0x00	0x00
+(gdb) x/8bx 0x6037b0
+0x6037b0 <node1>:	0x6f	0x00	0x00	0x00	0x01	0x00	0x00	0x00
+(gdb) 
+
+little endian, unsigned comparison
+
+00eb = 235 -> 6
+0205 = 517 -> 5
+01b2 = 434 -> 4
+0110 = 272 -> 3
+00a1 = 161 -> 2
+006f = 111 -> 1
+
+5 4 3 6 2 1
+Worked!!!
+
+./bomb
+I am for medical liability at the federal level.
+1 2 3 5 8 13
+1 o 195
+60 3
+eeeaaf
+5 4 3 6 2 1
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                              Phase 6                                               //
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+4 versions of midterm papers:
+Q2: 800   648    512      392
+Q3: red   black  orange   brown
+Q4: wolf  lion   gorilla  ferret
+
+
 
 
