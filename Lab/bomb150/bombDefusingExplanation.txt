@@ -845,7 +845,7 @@ Dump of assembler code for function phase_6:
    0x0000000000400fa9 <+87>:	mov    $0x0,%ebx
    0x0000000000400fae <+92>:	lea    0x30(%rsp),%r8
    0x0000000000400fb3 <+97>:	mov    $0x1,%ebp
-   0x0000000000400fb8 <+102>:	mov    $0x6037b0,%esi                  // Check this address. 0x6037b0. Probably the address of the first node.
+   0x0000000000400fb8 <+102>:	mov    $0x6037b0,%esi                  // Check this address. 0x6037b0
    0x0000000000400fbd <+107>:	mov    %rsp,%rdi
    0x0000000000400fc0 <+110>:	jmp    0x400fdb <phase_6+137>
    0x0000000000400fc2 <+112>:	mov    0x8(%rdx),%rdx
@@ -927,6 +927,7 @@ gs             0x0	0
 // So for an input of “1 2 3 4 5 6”, rbx > rax, so it wouldn’t pass the 3rd conditional check to jump to after the bomb.
 // Check the values in rbx. And make sure that whatever comes next in the loop, the value is always getting smaller.
 
+/* .................. Wrong approach start: .................. */
 (gdb) x/3x $rbx
 0x6037b0 <node1>:	0x6f	0x00	0x00
 (gdb) x/3x *($rbx + 8)
@@ -967,75 +968,41 @@ rax            0x603790	6305680
 rbx            0x603770	6305648
 // Step through, but didn’t pass the 3rd iteration of explode bomb. So 5 3 are in correct order. So now I know for the node values, 5 > 3 and 4 > 6.
 
-// Try 5 4 3 1 2 6
-// Step through, but didn’t pass the 4th iteration of explode bomb. So 5 4 3 are in correct order. So now I know for the node values, 5 > 4 > 3 and 4 > 6.
-
+// Try 5 4 3 1 2 6. Step through, but didn’t pass the 4th iteration of explode bomb. So 5 4 3 are in correct order. So now I know for the node values, 5 > 4 > 3 and 4 > 6.
 // Try 5 4 1 3 2 6. Didn’t pass the 3rd iteration. 
 // Try 5 1 4 3 2 6. Didn’t pass the 2nd iteration.
 // Try 1 5 4 3 2 6. Didn’t pass the 1st iteration.
-
-// Weird. Maybe there’s overflow of addresses?
-0x05 <node5>
-0x10 <node3>
-0x6f <node1>
-0xa1 <node2>
-0xb2 <node4>
-0xeb <node6>
-
-
-
-Try 1 2 3 4 5 6
-Try 4 3 2 1 5 6
-
-For 1:
+// Weird. Step through and see all the rbx listed for each number.
 i r
-rax            0x6037a0	6305696
+For 1:
 rbx            0x6037b0	6305712
 
 For 2:
-rax            0x6037b0	6305712
 rbx            0x6037a0	6305696
 
 For 3:
-rax            0x6037a0	6305696
 rbx            0x603790	6305680
 
 For 4:
-rax            0x603790	6305680
 rbx            0x603780	6305664
 
 For 5:
-rax            0x603790	6305680
 rbx            0x603770	6305648
 
 For 6:
-rax            0x603780	6305664
 rbx            0x603760	6305632
+// Weird, they’re all in order, but neither “1 2 3 4 5 6“ nor “6 5 4 3 2 1“ worked.
 
-// Sort from highest to lowest value
+/* .................. Wrong approach end: .................. */
 
+kill gdb and start again.
 
-6305712, 2
-
-
-
-
-1 111
-2 -95
-3 16
-4 -78
-5 5
-6 -21
-
-1 3 5 6 4 2
-
-x/64bx 0x
-
+/* .................. Correct approach start: ..................*/
 until *0x40102f
 0x000000000040102f in phase_6 ()
 (gdb) i r
 rax            0x603780	6305664
-rbx            0x603770	6305648
+rbx            0x603770	6305648                 // see what’s inside rbx address.
 rcx            0x1	1
 rdx            0x205	517
 rsi            0x6037b0	6305712
@@ -1059,6 +1026,7 @@ es             0x0	0
 fs             0x0	0
 gs             0x0	0
 
+// see many node addresses inside rbx address
 (gdb) x/64bx 0x603770
 0x603770 <node5>:	0x05	0x02	0x00	0x00	0x05	0x00	0x00	0x00
 0x603778 <node5+8>:	0x80	0x37	0x60	0x00	0x00	0x00	0x00	0x00
@@ -1068,6 +1036,8 @@ gs             0x0	0
 0x603798 <node3+8>:	0x60	0x37	0x60	0x00	0x00	0x00	0x00	0x00
 0x6037a0 <node2>:	0xa1	0x00	0x00	0x00	0x02	0x00	0x00	0x00
 0x6037a8 <node2+8>:	0xb0	0x37	0x60	0x00	0x00	0x00	0x00	0x00
+
+// Get node1 and node6 addresses too
 (gdb) x/8bx 0x603760
 0x603760 <node6>:	0xeb	0x00	0x00	0x00	0x06	0x00	0x00	0x00
 (gdb) x/8bx 0x6037b0
@@ -1075,16 +1045,21 @@ gs             0x0	0
 (gdb) 
 
 little endian, unsigned comparison
+node 6 -> 00eb = 235
+node 5 -> 0205 = 517
+node 4 -> 01b2 = 434
+node 3 -> 0110 = 272
+node 2 -> 00a1 = 161
+node 1 -> 006f = 111
 
-00eb = 235 -> 6
-0205 = 517 -> 5
-01b2 = 434 -> 4
-0110 = 272 -> 3
-00a1 = 161 -> 2
-006f = 111 -> 1
+// Sort from largest to smallest
+517 > 434 > 272 > 235 > 161 > 111
+5     4     3     6     2     1
 
+// Kill gdb and retry this:
 5 4 3 6 2 1
-Worked!!!
+
+// Worked!!!
 
 ./bomb
 I am for medical liability at the federal level.
@@ -1097,15 +1072,244 @@ eeeaaf
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
-//                                              Phase 6                                               //
+//                                          Phase 7 (Secret)                                          //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+[jieyun@lnxsrv01 ~/bomb150]$ objdump -d bomb
 
-4 versions of midterm papers:
-Q2: 800   648    512      392
-Q3: red   black  orange   brown
-Q4: wolf  lion   gorilla  ferret
+// Check my objdump -d file and Control + F to find “secret”. Here’s the parts that contain the word “secret”:
 
+// 3 instances here:
+0000000000400f03 <secret_phase>:
+  400f03:	53                   	push   %rbx
+  400f04:	e8 83 06 00 00       	callq  40158c <read_line>
+  400f09:	ba 0a 00 00 00       	mov    $0xa,%edx              // set break point here to know when we enter the secret phase
+  400f0e:	be 00 00 00 00       	mov    $0x0,%esi
+  400f13:	48 89 c7             	mov    %rax,%rdi
+  400f16:	e8 5d fc ff ff       	callq  400b78 <strtol@plt>
+  400f1b:	89 c3                	mov    %eax,%ebx
+  400f1d:	8d 43 ff             	lea    -0x1(%rbx),%eax
+  400f20:	3d e8 03 00 00       	cmp    $0x3e8,%eax
+  400f25:	76 05                	jbe    400f2c <secret_phase+0x29>
+  400f27:	e8 6a 05 00 00       	callq  401496 <explode_bomb>
+  400f2c:	89 de                	mov    %ebx,%esi
+  400f2e:	bf 80 39 60 00       	mov    $0x603980,%edi
+  400f33:	e8 8f ff ff ff       	callq  400ec7 <fun7>
+  400f38:	85 c0                	test   %eax,%eax
+  400f3a:	74 05                	je     400f41 <secret_phase+0x3e>
+  400f3c:	e8 55 05 00 00       	callq  401496 <explode_bomb>
+  400f41:	bf 20 24 40 00       	mov    $0x402420,%edi
+  400f46:	e8 6d fb ff ff       	callq  400ab8 <puts@plt>
+  400f4b:	e8 91 04 00 00       	callq  4013e1 <phase_defused>
+  400f50:	5b                   	pop    %rbx
+  400f51:	c3                   	retq   
 
+// 1 instance here:
+00000000004013e1 <phase_defused>:
+  4013e1:	48 81 ec 98 00 00 00 	sub    $0x98,%rsp
+  4013e8:	bf 01 00 00 00       	mov    $0x1,%edi
+  4013ed:	e8 32 ff ff ff       	callq  401324 <send_msg>
+  4013f2:	83 3d cf 29 20 00 06 	cmpl   $0x6,0x2029cf(%rip)        # 603dc8 <num_input_strings>
+  4013f9:	0f 85 8f 00 00 00    	jne    40148e <phase_defused+0xad>
+  4013ff:	48 8d 4c 24 38       	lea    0x38(%rsp),%rcx
+  401404:	48 8d 54 24 3c       	lea    0x3c(%rsp),%rdx
+  401409:	48 8d 44 24 40       	lea    0x40(%rsp),%rax
+  40140e:	48 89 44 24 10       	mov    %rax,0x10(%rsp)
+  401413:	48 8d 44 24 28       	lea    0x28(%rsp),%rax
+  401418:	48 89 44 24 08       	mov    %rax,0x8(%rsp)
+  40141d:	48 8d 44 24 2c       	lea    0x2c(%rsp),%rax
+  401422:	48 89 04 24          	mov    %rax,(%rsp)
+  401426:	4c 8d 4c 24 30       	lea    0x30(%rsp),%r9
+  40142b:	4c 8d 44 24 34       	lea    0x34(%rsp),%r8
+  401430:	be 4e 25 40 00       	mov    $0x40254e,%esi      //1st address to check
+  401435:	bf 30 3e 60 00       	mov    $0x603e30,%edi      //2nd address to check
+  40143a:	b8 00 00 00 00       	mov    $0x0,%eax
+  40143f:	e8 84 f6 ff ff       	callq  400ac8 <__isoc99_sscanf@plt>
+  401444:	83 f8 07             	cmp    $0x7,%eax
+  401447:	75 31                	jne    40147a <phase_defused+0x99>
+  401449:	48 8d 7c 24 40       	lea    0x40(%rsp),%rdi
+  40144e:	be 63 25 40 00       	mov    $0x402563,%esi      //3rd address to check
+  401453:	e8 54 fe ff ff       	callq  4012ac <strings_not_equal>
+  401458:	85 c0                	test   %eax,%eax
+  40145a:	75 1e                	jne    40147a <phase_defused+0x99>
+  40145c:	bf 98 26 40 00       	mov    $0x402698,%edi
+  401461:	e8 52 f6 ff ff       	callq  400ab8 <puts@plt>
+  401466:	bf c0 26 40 00       	mov    $0x4026c0,%edi
+  40146b:	e8 48 f6 ff ff       	callq  400ab8 <puts@plt>
+  401470:	b8 00 00 00 00       	mov    $0x0,%eax
+  401475:	e8 89 fa ff ff       	callq  400f03 <secret_phase>
+  40147a:	bf f8 26 40 00       	mov    $0x4026f8,%edi
+  40147f:	e8 34 f6 ff ff       	callq  400ab8 <puts@plt>
+  401484:	bf 28 27 40 00       	mov    $0x402728,%edi
+  401489:	e8 2a f6 ff ff       	callq  400ab8 <puts@plt>
+  40148e:	48 81 c4 98 00 00 00 	add    $0x98,%rsp
+  401495:	c3                   	retq   
 
+// Try to get into the secret phase first
+break explode_bomb
+break phase_6
+run
+I am for medical liability at the federal level.
+1 2 3 5 8 13
+1 o 195
+60 3
+eeeaaf
+5 4 3 6 2 1
 
+// check all these addresses:
+(gdb) x/s 0x40254e
+0x40254e:	 "%d %d %d %d %d %d %s"
+(gdb) x/s 0x603e30
+0x603e30 <input_strings+80>:	 "1 2 3 5 8 13"
+(gdb) x/s 0x402563
+0x402563:	 "AustinPowers"
+// Nice! So I’m going to replace my phase 2 answer to be "1 2 3 5 8 13 AustinPowers” instead of just "1 2 3 5 8 13"
+
+// Now my bombDefusingAns.txt looks like this:
+I am for medical liability at the federal level.
+1 2 3 5 8 13 AustinPowers
+1 o 195
+60 3
+eeeaaf
+5 4 3 6 2 1
+
+// try this answer in gdb
+(gdb) quit
+(gdb) y
+(gdb) break explode_bomb
+Breakpoint 1 at 0x401496
+(gdb) break *0x400f09
+Breakpoint 2 at 0x400f09
+(gdb) run bombDefusingAns.txt
+Starting program: /w/home.05/ee/ugrad/jieyun/bomb150/bomb bombDefusingAns.txt
+Welcome to my fiendish little bomb. You have 6 phases with
+which to blow yourself up. Have a nice day!
+Phase 1 defused. How about the next one?
+That's number 2.  Keep going!
+Halfway there!
+So you got that one.  Try this one.
+Good work!  On to the next...
+Curses, you've found the secret phase!
+But finding it and solving it are quite different...
+
+// Yay! Got in!
+0              // input a random string first
+
+Breakpoint 2, 0x0000000000400f09 in secret_phase ()
+Missing separate debuginfos, use: debuginfo-install glibc-2.12-1.209.el6_9.2.x86_64
+(gdb) disassemble
+Dump of assembler code for function secret_phase:
+   0x0000000000400f03 <+0>:	push   %rbx
+   0x0000000000400f04 <+1>:	callq  0x40158c <read_line>
+=> 0x0000000000400f09 <+6>:	mov    $0xa,%edx
+   0x0000000000400f0e <+11>:	mov    $0x0,%esi
+   0x0000000000400f13 <+16>:	mov    %rax,%rdi
+   0x0000000000400f16 <+19>:	callq  0x400b78 <strtol@plt>
+   0x0000000000400f1b <+24>:	mov    %eax,%ebx
+   0x0000000000400f1d <+26>:	lea    -0x1(%rbx),%eax
+   0x0000000000400f20 <+29>:	cmp    $0x3e8,%eax
+   0x0000000000400f25 <+34>:	jbe    0x400f2c <secret_phase+41>
+   0x0000000000400f27 <+36>:	callq  0x401496 <explode_bomb>
+   0x0000000000400f2c <+41>:	mov    %ebx,%esi
+   0x0000000000400f2e <+43>:	mov    $0x603980,%edi
+   0x0000000000400f33 <+48>:	callq  0x400ec7 <fun7>               // calls function fun7.
+   0x0000000000400f38 <+53>:	test   %eax,%eax                     // function fun7 needs to return 0.
+   0x0000000000400f3a <+55>:	je     0x400f41 <secret_phase+62>
+   0x0000000000400f3c <+57>:	callq  0x401496 <explode_bomb>
+   0x0000000000400f41 <+62>:	mov    $0x402420,%edi
+   0x0000000000400f46 <+67>:	callq  0x400ab8 <puts@plt>
+   0x0000000000400f4b <+72>:	callq  0x4013e1 <phase_defused>
+   0x0000000000400f50 <+77>:	pop    %rbx
+   0x0000000000400f51 <+78>:	retq   
+End of assembler dump.
+
+// Check the registers right before calling fun7
+(gdb) until *0x400f33
+0x0000000000400f33 in secret_phase ()
+(gdb) i r
+rax            0x31	49
+rbx            0x32	50
+rcx            0x0	0
+rdx            0x0	0
+rsi            0x32	50
+rdi            0x603980	6306176                               // one of the parameters sent into fun7, along with eax = 0
+rbp            0x7fffffffe1d0	0x7fffffffe1d0
+rsp            0x7fffffffe020	0x7fffffffe020
+r8             0x380bf8ee40	240719031872
+r9             0x380bd42380	240716620672
+r10            0x32	50
+r11            0x1999999999999999	1844674407370955161
+r12            0x400c50	4197456
+r13            0x7fffffffe1c0	140737488347584
+r14            0x0	0
+r15            0x0	0
+rip            0x400f33	0x400f33 <secret_phase+48>
+eflags         0x293	[ CF AF SF IF ]
+cs             0x33	51
+ss             0x2b	43
+ds             0x0	0
+es             0x0	0
+fs             0x0	0
+gs             0x0	0
+
+// Get into fun7 to take a look
+(gdb) si
+0x0000000000400ec7 in fun7 ()
+(gdb) disassemble
+Dump of assembler code for function fun7:
+=> 0x0000000000400ec7 <+0>:	sub    $0x8,%rsp
+   0x0000000000400ecb <+4>:	mov    $0xffffffff,%eax
+   0x0000000000400ed0 <+9>:	test   %rdi,%rdi
+   0x0000000000400ed3 <+12>:	je     0x400efe <fun7+55>
+   0x0000000000400ed5 <+14>:	mov    (%rdi),%edx
+   0x0000000000400ed7 <+16>:	cmp    %esi,%edx
+   0x0000000000400ed9 <+18>:	jle    0x400ee8 <fun7+33>
+   0x0000000000400edb <+20>:	mov    0x8(%rdi),%rdi
+   0x0000000000400edf <+24>:	callq  0x400ec7 <fun7>
+   0x0000000000400ee4 <+29>:	add    %eax,%eax
+   0x0000000000400ee6 <+31>:	jmp    0x400efe <fun7+55>
+   0x0000000000400ee8 <+33>:	mov    $0x0,%eax
+   0x0000000000400eed <+38>:	cmp    %esi,%edx
+   0x0000000000400eef <+40>:	je     0x400efe <fun7+55>
+   0x0000000000400ef1 <+42>:	mov    0x10(%rdi),%rdi
+   0x0000000000400ef5 <+46>:	callq  0x400ec7 <fun7>
+   0x0000000000400efa <+51>:	lea    0x1(%rax,%rax,1),%eax
+   0x0000000000400efe <+55>:	add    $0x8,%rsp
+   0x0000000000400f02 <+59>:	retq   
+End of assembler dump.
+
+// check what this function returns with parameters 6306176 and 0
+(gdb) p fun7(6306176, 0)
+$1 = -16
+// Need to get a return value of 0, not -16. Keep trying.
+(gdb) p fun7(6306176, 1)
+$2 = 0
+// Got it the second try. So the answer should be the second parameter, which is 1. I know I didn’t spend time understanding what fun7 does and I got lucky with this brute force method for fun7.
+
+// Try this in gdb
+(gdb) kill
+Kill the program being debugged? (y or n) y
+(gdb) run bombDefusingAns.txt
+Starting program: /w/home.05/ee/ugrad/jieyun/bomb150/bomb bombDefusingAns.txt
+Welcome to my fiendish little bomb. You have 6 phases with
+which to blow yourself up. Have a nice day!
+Phase 1 defused. How about the next one?
+That's number 2.  Keep going!
+Halfway there!
+So you got that one.  Try this one.
+Good work!  On to the next...
+Curses, you've found the secret phase!
+But finding it and solving it are quite different...
+1
+
+Breakpoint 2, 0x0000000000400f09 in secret_phase ()
+(gdb) continue
+Continuing.
+Wow! You've defused the secret stage!
+Congratulations! You've defused the bomb!
+Your instructor has been notified and will verify your solution.
+
+Program exited normally.
+(gdb) 
+
+// Success! Defused all 6 phases + a secret phase.
