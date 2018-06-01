@@ -257,7 +257,7 @@ Dump of assembler code for function phase_2:
    0x0000000000401053 <+6>:	mov    %rsp,%rsi
    0x0000000000401056 <+9>:	callq  0x4014cc <read_six_numbers>
    0x000000000040105b <+14>:	cmpl   $0x1,(%rsp)                  // First: compare rsp to 1
-   0x000000000040105f <+18>:	jne    0x401068 <phase_2+27>        // continue if >=1, otherwise explode
+   0x000000000040105f <+18>:	jne    0x401068 <phase_2+27>        // continue if > 1, otherwise explode
    0x0000000000401061 <+20>:	cmpl   $0x2,0x4(%rsp)
    0x0000000000401066 <+25>:	je     0x40106d <phase_2+32>
    0x0000000000401068 <+27>:	callq  0x401496 <explode_bomb>      // pass first bomb if first number is 1
