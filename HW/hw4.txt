@@ -5,5 +5,83 @@ Jie-Yun Cheng
 // Problem 1 //
 ///////////////
 
+Short answer: The output of the MIPS code is “The value of i is: 4”
+
+Long explanation:
+
+These are the registers used in the mips program:
+$s0-s7 are temporaries (saved on call)
+$t8-t9 are volatile temporaries (not saved on call)
+$a0-a3 are function call parameters
+$v0-v1 are function returns
+$ra is function return address
+
+MIPS code and comments:
+.globl mainmain:.data
+	addu 	$s7, $0, $ra	# s7 <- 0 + ra
+	add	$s3, $0, $0	# s3 <- 0 + 0	addi	$s4, $0, 1	# s4 <- 0 + 1
+	add 	$s5, $0, $0	# s5 <- 0 + 0
+	la	$s6, save	# s6 <- save	.data        .align  2        .globl  save
+# the next line creates an array of 10 words that can be referred toas “save”# the array is initialized to the 10 values after .word# so the first array entry is a 0 and the last entry is a 2
+save: 	.word 0,0,0,0,0,0,0,6,3,2 # save <- 0,0,0,0,0,0,0,6,3,2
+	.textLoop:	add $t8, $s3, $s3	# t8 <- s3 + s3
+	add $t8, $t8, $t8	# t8 <- t8 + t8
+	add $t8, $t8, $s6	# t8 <- t8 + s6
+	lw $t9, 0($t8)		# load a word from memory. t9 <- memory[t8 + 0]
+	bne $t9, $s5, Exit	# branch to exit if t9 != s5	add $s3, $s3, $s4	# s3 <- s3 + s4
+	j Loop 
+
+Exit:	.data        .globl  message1message1:       .asciiz "\nThe value of i is: "        .text			#test segment        li      $v0, 4        la      $a0, message1	# put message1 into a0        syscall			# print        li      $v0, 1        add     $a0, $0, $s3	# a0 <- 0 + s3        syscall	addu $ra, $0, $s7	# ra <- 0 + s7
+	jr $ra			# jump to address stored in ra	add $0, $0, $0
+
+The C code looks like:
+s7 = ra
+s3 = 0
+s4 = 1
+s5 = 0
+s6 = save = 0,0,0,0,0,0,0,6,3,2
+
+In the loop,
+t8 = s3 + s3
+t8 = t8 + t8
+t8 = t8 + s6
+t9 = t8
+if t9 != s5, branch to exit
+s3 = s3 + s4
+
+First time in the loop:
+t8 = 0 + 0 = 0
+t8 = 0 + 0 = 0
+t8 = 0 + 0 = 0
+0 == 0, doesn’t branch
+s3 = 0 + 1 = 1
+
+Second time in the loop:
+t8 = 1 + 1 = 2
+t8 = 2 + 2 = 4
+t8 = 4 + 0 = 4
+4 != 0, branch to exit. Prints “The value of i is: 4”
+s3 = 1 + 1 = 2
 
 
+
+///////////////
+// Problem 2 //
+///////////////
+
+Input matrices: a[40][40], b[40][40]
+Output matrix: c[1600][1600]
+
+It’s more efficient when row is the outer for loop than column.
+It’s more efficient when i is more outer than x, because i is multiplied by SIZE.
+It’s more efficient when j is more outer than y, because j is multiplied by SIZE.
+
+So in terms of order, ijxy is the most efficient, because it abides by x > y, i > x, j > y, where > means proceeds.
+
+a. ijxy, x > y, i > x, j > y
+b. jixy, x > y, i > x, j > y
+c. xiyj, x > y
+d. ixjy, x > y, i > x, j > y
+e. jyix, i > x, j > y
+
+The worst order, meaning it takes the longest execution time, is “c. xiyj”.
