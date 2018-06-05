@@ -5,7 +5,7 @@ Jie-Yun Cheng
 // Problem 1 //
 ///////////////
 
-Short answer: The output of the MIPS code is “The value of i is: 4”
+Short answer: The output of the MIPS code is “The value of i is: 7”
 
 Long explanation:
 
@@ -18,70 +18,82 @@ $ra is function return address
 
 MIPS code and comments:
 .globl mainmain:.data
-	addu 	$s7, $0, $ra	# s7 <- 0 + ra
-	add	$s3, $0, $0	# s3 <- 0 + 0	addi	$s4, $0, 1	# s4 <- 0 + 1
-	add 	$s5, $0, $0	# s5 <- 0 + 0
-	la	$s6, save	# s6 <- save	.data        .align  2        .globl  save
-# the next line creates an array of 10 words that can be referred toas “save”# the array is initialized to the 10 values after .word# so the first array entry is a 0 and the last entry is a 2
+	addu 	$s7, $0, $ra	# $s7 <- 0 + $ra
+	add	$s3, $0, $0	# $s3 <- 0 + 0	addi	$s4, $0, 1	# $s4 <- 0 + 1
+	add 	$s5, $0, $0	# $s5 <- 0 + 0
+	la	$s6, save	# $s6 <- save	.data        .align  2        .globl  save
 save: 	.word 0,0,0,0,0,0,0,6,3,2 # save <- 0,0,0,0,0,0,0,6,3,2
-	.textLoop:	add $t8, $s3, $s3	# t8 <- s3 + s3
-	add $t8, $t8, $t8	# t8 <- t8 + t8
-	add $t8, $t8, $s6	# t8 <- t8 + s6
-	lw $t9, 0($t8)		# load a word from memory. t9 <- memory[t8 + 0]
-	bne $t9, $s5, Exit	# branch to exit if t9 != s5	add $s3, $s3, $s4	# s3 <- s3 + s4
+	.textLoop:	add $t8, $s3, $s3	# $t8 <- $s3 + $s3
+	add $t8, $t8, $t8	# $t8 <- $t8 + $t8
+	add $t8, $t8, $s6	# $t8 <- $t8 + $s6
+	lw $t9, 0($t8)		# load a word from memory. $t9 <- memory[$t8 + 0]
+	bne $t9, $s5, Exit	# branch to exit if $t9 != $s5	add $s3, $s3, $s4	# $s3 <- $s3 + $s4
 	j Loop 
 
-Exit:	.data        .globl  message1message1:       .asciiz "\nThe value of i is: "        .text			#test segment        li      $v0, 4        la      $a0, message1	# put message1 into a0        syscall			# print        li      $v0, 1        add     $a0, $0, $s3	# a0 <- 0 + s3        syscall	addu $ra, $0, $s7	# ra <- 0 + s7
-	jr $ra			# jump to address stored in ra	add $0, $0, $0
+Exit:	.data        .globl  message1message1:       .asciiz "\nThe value of i is: "        .text			#test segment        li      $v0, 4        la      $a0, message1	# put message1 into $a0        syscall			# print string contained at $a0, which is message1        li      $v0, 1        add     $a0, $0, $s3	# $a0 <- 0 + $s3        syscall			# print int contained at $a0, which is 2	addu $ra, $0, $s7	# $ra <- 0 + $s7
+	jr $ra			# jump to address stored in $ra	add $0, $0, $0
 
 The C code looks like:
-s7 = ra
-s3 = 0
-s4 = 1
-s5 = 0
-s6 = save = 0,0,0,0,0,0,0,6,3,2
+	s7 = ra
+	s3 = 0
+	s4 = 1
+	s5 = 0
+	s6 = save = 0,0,0,0,0,0,0,6,3,2
 
 In the loop,
-t8 = s3 + s3
-t8 = t8 + t8
-t8 = t8 + s6
-t9 = t8
-if t9 != s5, branch to exit
-s3 = s3 + s4
+	t8 = s3 + s3
+	t8 = t8 + t8
+	t8 = t8 + s6
+	t9 = save[(t8 number of bytes) + 0]
+	if t9 != s5, branch to exit
+	s3 = s3 + s4
 
-First time in the loop:
-t8 = 0 + 0 = 0
-t8 = 0 + 0 = 0
-t8 = 0 + 0 = 0
-0 == 0, doesn’t branch
-s3 = 0 + 1 = 1
+	First time in the loop:
+		t8 = 0 + 0 = 0
+		t8 = 0 + 0 = 0
+		t8 = 0 + save[0] = 0 + 0 = 0
+		t9 = save[0 bytes + 0] = save[0] = 0
+		0 == 0 // doesn’t branch
+		s3 = 0 + 1 = 1
 
-Second time in the loop:
-t8 = 1 + 1 = 2
-t8 = 2 + 2 = 4
-t8 = 4 + 0 = 4
-4 != 0, branch to exit. Prints “The value of i is: 4”
-s3 = 1 + 1 = 2
+	Second time in the loop:
+		t8 = 1 + 1 = 2
+		t8 = 2 + 2 = 4
+		t8 = 4 + save[1] = 4 + 0 = 4
+		t9 = save[(4 bytes)+ 0] = save[1] = 0 // because an int is 4 bytes
+		0 == 0 // doesn’t branch
+		s3 = 1 + 1 = 2
 
-
+	Third time in the loop:
+		t8 = 2 + 2 = 4
+		t8 = 4 + 4 = 8
+		t8 = 8 + save[2] = 8 + 0 = 8
+		t9 = save[(8 bytes) + 0] = save[2] = 0 // because an int is 4 bytes
+		0 == 0 // doesn’t branch
+		s3 = 2 + 1 = 3
+	. . .
+	Seventh time in the loop:
+		. . .
+		s3 = 6 + 1 = 7
+	Eighth time in the loop:
+		. . .
+		t9 = save[(28 bytes) + 0] = save[7] = 6 // because an int is 4 bytes
+		6 != 0 // branch to exit. Prints “The value of i is: 7”, 
+			because the latest value of s3 was 7, as seen in the seventh time in the loop.
+		s3 = 7 + 1 = 8
 
 ///////////////
 // Problem 2 //
 ///////////////
 
-Input matrices: a[40][40], b[40][40]
-Output matrix: c[1600][1600]
+Short answer: The worst order, meaning it takes the longest execution time, is “e. jyix”.
 
-It’s more efficient when row is the outer for loop than column.
-It’s more efficient when i is more outer than x, because i is multiplied by SIZE.
-It’s more efficient when j is more outer than y, because j is multiplied by SIZE.
+Long explanation:
 
-So in terms of order, ijxy is the most efficient, because it abides by x > y, i > x, j > y, where > means proceeds.
+Looking at how the input matrices a and b are accessed, we can see what’s more efficient.
+	c[i*SIZE+x][j*SIZE+y]=a[i][j]*b[x][y];
 
-a. ijxy, x > y, i > x, j > y
-b. jixy, x > y, i > x, j > y
-c. xiyj, x > y
-d. ixjy, x > y, i > x, j > y
-e. jyix, i > x, j > y
-
-The worst order, meaning it takes the longest execution time, is “c. xiyj”.
+It’s more efficient when we iterate with rows in the outer loop and columns in the inner loop,
+so i and x should be on the outer loop because they are rows for matrices a and b respectively.
+Hence, i and x should proceed j and y.
+The only answer that goes against this completely is e.jyix, where j and y proceed i and x.

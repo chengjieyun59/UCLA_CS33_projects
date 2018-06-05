@@ -1,0 +1,110 @@
+ssh jieyun@lnxsrv08.seas.ucla.edu
+
+// Copy OMPlab2018.tgz from this path
+[jieyun@lnxsrv08 ~]$ cp /w/class.1/cs/cs33/csbin/OpenMP_Spring2018_handout/OMPlab2018.tgz ~
+
+// Untar the file to any seas machine in my directory
+[jieyun@lnxsrv08 ~]$ tar -zxf OMPlab2018.tgz
+
+[jieyun@lnxsrv08 ~]$ ls
+
+[jieyun@lnxsrv08 ~]$ cd OMPlab2018
+
+[jieyun@lnxsrv08 ~/OMPlab2018]$ ls
+f.file  Makefile     ompDeblur.h  seqDeblur.c  u.file
+main.c  ompDeblur.c  proftext     seqDeblur.h
+
+// Cyberduck: click “Open Connection”, select “SFTP”, type “lnxsrv.seas.ucla.edu” for Server, and my username and password, and click connect. Download “omgDeblur.c” to modify.
+
+[jieyun@lnxsrv08 ~/OMPlab2018]$ make all
+gcc -O3 -fopenmp -I.  -c ompDeblur.c	
+gcc -O3 -fopenmp -I.  -c main.c
+gcc -O3 -fopenmp -I.  -c seqDeblur.c
+gcc -o deblurTest -fopenmp ompDeblur.o main.o seqDeblur.o -lm  
+[jieyun@lnxsrv08 ~/OMPlab2018]$ make all GPROF=1
+make: Nothing to be done for `all'.
+[jieyun@lnxsrv08 ~/OMPlab2018]$ make clean
+rm -f deblurTest ompDeblur.o main.o seqDeblur.o gmon.out
+[jieyun@lnxsrv08 ~/OMPlab2018]$ make all GPROF=1
+gcc -O2 -pg -fopenmp -I.  -c ompDeblur.c	
+gcc -O2 -pg -fopenmp -I.  -c main.c
+gcc -O2 -pg -fopenmp -I.  -c seqDeblur.c
+gcc -o deblurTest -fopenmp ompDeblur.o main.o seqDeblur.o -lm -pg 
+[jieyun@lnxsrv08 ~/OMPlab2018]$ ./deblurTest
+Loading data...Verifying load integrity...
+Starting the deblur parallelization test
+273852 pixels have converged on iteration 0
+273866 pixels have converged on iteration 1
+274011 pixels have converged on iteration 2
+274347 pixels have converged on iteration 3
+274757 pixels have converged on iteration 4
+275534 pixels have converged on iteration 5
+276158 pixels have converged on iteration 6
+276299 pixels have converged on iteration 7
+276347 pixels have converged on iteration 8
+276386 pixels have converged on iteration 9
+Finished Sequential test, starting parallel test...
+273852 pixels have converged on iteration 0
+273866 pixels have converged on iteration 1
+274011 pixels have converged on iteration 2
+274347 pixels have converged on iteration 3
+274757 pixels have converged on iteration 4
+275534 pixels have converged on iteration 5
+276158 pixels have converged on iteration 6
+276299 pixels have converged on iteration 7
+276347 pixels have converged on iteration 8
+276386 pixels have converged on iteration 9
+Sequential took 14.259762 time units
+OpenMP took 12.248697 time units
+This resulted in a 1.164186x speed-up
+Ending the deblur parallelization test
+
+[jieyun@lnxsrv08 ~/OMPlab2018]$ top
+
+top - 17:30:59 up 11 days,  9:20, 56 users,  load average: 1.86, 4.35, 3.71
+Tasks: 882 total,   1 running, 880 sleeping,   1 stopped,   0 zombie
+Cpu(s):  1.3%us,  0.5%sy,  0.0%ni, 98.2%id,  0.0%wa,  0.0%hi,  0.0%si,  0.0%st
+Mem:  32828532k total, 27267464k used,  5561068k free,   280288k buffers
+Swap: 20479996k total,     8928k used, 20471068k free, 24733104k cached
+
+  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND                         
+14744 fehrnstr  20   0 19900 2036 1056 S  1.6  0.0   0:46.88 top                              
+33050 daksh     20   0 19900 2044 1056 S  1.6  0.0   0:02.56 top                              
+33398 jieyun    20   0 19904 2044 1056 R  1.6  0.0   0:00.96 top                              
+33428 classyng  20   0  138m 5172 2504 S  1.0  0.0   0:00.35 vim                              
+ 8742 root      20   0 13868 1352 1116 S  0.7  0.0  92:15.11 nvidia-smi                       
+  150 root      20   0     0    0    0 S  0.3  0.0   0:36.17 events/19                        
+ 3161 root      20   0  9992 2356  572 S  0.3  0.0   1:02.89 ypserv                           
+31625 classyya  20   0  110m 1996 1580 S  0.3  0.0   0:00.08 bash                             
+32700 edwardz   20   0  101m 2452 1284 S  0.3  0.0   0:00.06 sshd                             
+33514 edwardz   20   0  138m 5180 2512 S  0.3  0.0   0:00.11 vim                              
+    1 root      20   0 23592 1444 1204 S  0.0  0.0   0:03.62 init                             
+    2 root      20   0     0    0    0 S  0.0  0.0   0:00.19 kthreadd                         
+    3 root      RT   0     0    0    0 S  0.0  0.0   0:00.63 migration/0                      
+    4 root      20   0     0    0    0 S  0.0  0.0   0:01.83 ksoftirqd/0                      
+    5 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 stopper/0                        
+    6 root      RT   0     0    0    0 S  0.0  0.0   0:00.90 watchdog/0                       
+    7 root      RT   0     0    0    0 S  0.0  0.0   0:00.64 migration/1                      
+    8 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 stopper/1                        
+    9 root      20   0     0    0    0 S  0.0  0.0   0:01.85 ksoftirqd/1                      
+   10 root      RT   0     0    0    0 S  0.0  0.0   0:00.87 watchdog/1                       
+   11 root      RT   0     0    0    0 S  0.0  0.0   0:03.44 migration/2                      
+   12 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 stopper/2                        
+   13 root      20   0     0    0    0 S  0.0  0.0   0:02.03 ksoftirqd/2                      
+   14 root      RT   0     0    0    0 S  0.0  0.0   0:00.77 watchdog/2                       
+   15 root      RT   0     0    0    0 S  0.0  0.0   0:00.31 migration/3                      
+   16 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 stopper/3                        
+   17 root      20   0     0    0    0 S  0.0  0.0   0:02.16 ksoftirqd/3                      
+   18 root      RT   0     0    0    0 S  0.0  0.0   0:00.83 watchdog/3                       
+   19 root      RT   0     0    0    0 S  0.0  0.0   0:00.30 migration/4                      
+   20 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 stopper/4                        
+   21 root      20   0     0    0    0 S  0.0  0.0   0:01.12 ksoftirqd/4                      
+   22 root      RT   0     0    0    0 S  0.0  0.0   0:00.78 watchdog/4                       
+   23 root      RT   0     0    0    0 S  0.0  0.0   0:00.21 migration/5                      
+
+cp /w/class.1/cs/cs33/csbin/OpenMP_new_input_files/Testing_OpenMP.tgz ~
+tar -zxf Testing_OpenMP.tgz
+cd Testing_OpenMP
+ls // prints: f.file  u.file
+
+
