@@ -19,13 +19,14 @@ int OMP_yMax;
 int OMP_zMax;
 #define zMax OMP_zMax
 
-int OMP_Index(int x, int y, int z)
+// declare some short functions as inline
+int inline OMP_Index(int x, int y, int z)
 {
 	return ((z * yMax + y) * xMax + x);
 }
 #define Index(x, y, z) OMP_Index(x, y, z)
 
-double OMP_SQR(double x)
+double inline OMP_SQR(double x)
 {
 	return pow(x, 2.0);
 }
@@ -57,114 +58,101 @@ void OMP_GaussianBlur(double *u, double Ksigma, int stepCount)
 
 	for(step = 0; step < stepCount; step++)
 	{
+        #pragma omp parallel for shared(zMax, yMax, xMax) private(z,y,x)
+        for(z = 0; z < zMax; z++)
+        {
+            for(y = 0; y < yMax; y++)
+            {
+                u[Index(0, y, z)] *= boundryScale;
+            }
+            for(y = 0; y < yMax; y++)
+            {
+                for(x = 1; x < xMax; x++)
+                {
+                    u[Index(x, y, z)] += u[Index(x - 1, y, z)] * nu;
+                }
+            }
+            for(y = 0; y < yMax; y++)
+            {
+                u[Index(0, y, z)] *= boundryScale;
+            }
+            for(y = 0; y < yMax; y++)
+            {
+                for(x = xMax - 2; x >= 0; x--)
+                {
+                    u[Index(x, y, z)] += u[Index(x + 1, y, z)] * nu;
+                }
+            }
+            for(x = 0; x < xMax; x++)
+            {
+                u[Index(x, 0, z)] *= boundryScale;
+            }
+            for(y = 1; y < yMax; y++)
+            {
+                for(x = 0; x < xMax; x++)
+                {
+                    u[Index(x, y, z)] += u[Index(x, y - 1, z)] * nu;
+                }
+            }
+            for(x = 0; x < xMax; x++)
+            {
+                u[Index(x, yMax - 1, z)] *= boundryScale;
+            }
+            for(y = yMax - 2; y >= 0; y--)
+            {
+                for(x = 0; x < xMax; x++)
+                {
+                    u[Index(x, y, z)] += u[Index(x, y + 1, z)] * nu;
+                }
+            }
+        }
+        
+        // below does not iterate through z in the inner loop anymore
+        #pragma omp parallel for shared(yMax, xMax) private(y,x)
 		for(y = 0; y < yMax; y++)
 		{
-			for(z = 0; z < zMax; z++)
-			{
-				u[Index(0, y, z)] *= boundryScale;
-			}
-		}
-		for(x = 1; x < xMax; x++)
-		{
-			for(y = 0; y < yMax; y++)
-			{
-				for( z = 0; z < zMax; z++)
-				{
-					u[Index(x, y, z)] += u[Index(x - 1, y, z)] * nu;
-				}
-			}
-		}
-		for(y = 0; y < yMax; y++)
-		{
-			for(z = 0; z < zMax; z++)
-			{
-				u[Index(0, y, z)] *= boundryScale;
-			}
-		}
-		for(x = xMax - 2; x >= 0; x--)
-		{
-			for(y = 0; y < yMax; y++)
-			{
-				for(z = 0; z < zMax; z++)
-				{
-					u[Index(x, y, z)] += u[Index(x + 1, y, z)] * nu;
-				}
-			}
-		}
-		for(x = 0; x < xMax; x++)
-		{
-			for(z = 0; z < zMax; z++)
-			{
-				u[Index(x, 0, z)] *= boundryScale;
-			}
-		}
-		for(x = 0; x < xMax; x++)
-		{
-			for(y = 1; y < yMax; y++)
-			{
-				for(z = 0; z < zMax; z++)
-				{
-					u[Index(x, y, z)] += u[Index(x, y - 1, z)] * nu;
-				}
-			}
-		}
-		for(x = 0; x < xMax; x++)
-		{
-			for(z = 0; z < zMax; z++)
-			{
-				u[Index(x, yMax - 1, z)] *= boundryScale;
-			}
-		}
-		for(x = 0; x < xMax; x++)
-		{
-			for(y = yMax - 2; y >= 0; y--)
-			{
-				for(z = 0; z < zMax; z++)
-				{
-					u[Index(x, y, z)] += u[Index(x, y + 1, z)] * nu;
-				}
-			}
-		}
-		for(x = 0; x < xMax; x++)
-		{
-			for(y = 0; y < yMax; y++)
+			for(x = 0; x < xMax; x++)
 			{
 				u[Index(x, y, 0)] *= boundryScale;
 			}
 		}
-		for(x = 0; x < xMax; x++)
+		for(z = 1; z < zMax; z++)
 		{
 			for(y = 0; y < yMax; y++)
 			{
-				for(z = 1; z < zMax; z++)
+				for(x = 0; x < xMax; x++)
 				{
 					u[Index(x, y, z)] = u[Index(x, y, z - 1)] * nu;
 				}
 			}
 		}
-		for(x = 0; x < xMax; x++)
+        
+        #pragma omp parallel for shared(zMax, yMax, xMax) private(y,x)
+		for(y = 0; y < yMax; y++)
 		{
-			for(y = 0; y < yMax; y++)
+			for(x = 0; x < xMax; x++)
 			{
 				u[Index(x, y, zMax - 1)] *= boundryScale;
 			}
 		}
-		for(x = 0; x < xMax; x++)
+		for(z = zMax - 2; z >= 0; z--)
 		{
 			for(y = 0; y < yMax; y++)
 			{
-				for(z = zMax - 2; z >= 0; z--)
+				for(x = 0; x < xMax; x++)
 				{
 					u[Index(x, y, z)] += u[Index(x, y, z + 1)] * nu;
 				}
 			}
 		}
 	}
-	for(x = 0; x < xMax; x++)
+    
+    #pragma omp parallel for private(z,y,x) shared(zMax, yMax, xMax)
+	for(z = 0; z < zMax; z++)
 	{
 		for(y = 0; y < yMax; y++)
 		{
-			for(z = 0; z < zMax; z++)
+			for(x = 0; x < xMax; x++)
 			{
 				u[Index(x, y, z)] *= postScale;
 			}
@@ -184,58 +172,76 @@ void OMP_Deblur(double* u, const double* f, int maxIterations, double dt, double
 
 	for(iteration = 0; iteration < maxIterations && converged != fullyConverged; iteration++)
 	{
-		for(x = 1; x < xMax - 1; x++)
+        int xMaxless = xMax - 1;
+        int yMaxless = yMax - 1;
+        int zMaxless = zMax - 1;
+        
+        #pragma omp parallel for private(z,y,x)
+		for(z = 1; z < zMaxless; z++)
 		{
-			for(y = 1; y < yMax - 1; y++)
+			for(y = 1; y < yMaxless; y++)
 			{
-				for(z = 1; z < zMax - 1; z++)
+				for(x = 1; x < xMaxless; x++)
 				{
-					g[Index(x, y, z)] = 1.0 / sqrt(epsilon + 
-						SQR(u[Index(x, y, z)] - u[Index(x + 1, y, z)]) + 
-						SQR(u[Index(x, y, z)] - u[Index(x - 1, y, z)]) + 
-						SQR(u[Index(x, y, z)] - u[Index(x, y + 1, z)]) + 
-						SQR(u[Index(x, y, z)] - u[Index(x, y - 1, z)]) + 
-						SQR(u[Index(x, y, z)] - u[Index(x, y, z + 1)]) + 
-						SQR(u[Index(x, y, z)] - u[Index(x, y, z - 1)]));
+                    int temp = Index(x,y,z);
+                    
+					g[temp] = 1.0 / sqrt(epsilon +
+						SQR(u[temp] - u[Index(x + 1, y, z)]) +
+						SQR(u[temp] - u[Index(x - 1, y, z)]) +
+						SQR(u[temp] - u[Index(x, y + 1, z)]) +
+						SQR(u[temp] - u[Index(x, y - 1, z)]) +
+						SQR(u[temp] - u[Index(x, y, z + 1)]) +
+						SQR(u[temp] - u[Index(x, y, z - 1)]));
 				}
 			}
 		}
 		memcpy(conv, u, sizeof(double) * xMax * yMax * zMax);
 		OMP_GaussianBlur(conv, Ksigma, 3);
-		for(x = 0; x < xMax; x++)
+		for(z = 0; z < zMax; z++)
 		{
 			for(y = 0; y < yMax; y++)
 			{
-				for(z = 0; z < zMax; z++)
+				for(x = 0; x < xMax; x++)
 				{
-					double r = conv[Index(x, y, z)] * f[Index(x, y, z)] / sigma2;
-					r = (r * (2.38944 + r * (0.950037 + r))) / (4.65314 + r * (2.57541 + r * (1.48937 + r)));
-					conv[Index(x, y, z)] -= f[Index(x, y, z)] * r;
+                    int temp = Index(x,y,z);
+					double r = conv[temp] * f[temp] / sigma2;
+                    double rsquare = r * r;
+                    r = (rsquare + r * 3.339477) / (rsquare * r + rsquare * 1.48937 + r * 2.57541 + 4.65314);
+					// r = (r * (2.38944 + r * (0.950037 + r))) / (4.65314 + r * (2.57541 + r * (1.48937 + r)));
+					conv[temp] -= f[temp] * r;
 				}
 			}
 		}
 		OMP_GaussianBlur(conv, Ksigma, 3);
 		converged = 0;
-		for(x = 1; x < xMax - 1; x++)
+		for(z = 1; z < zMaxless; z++)
 		{
-			for(y = 1; y < yMax - 1; y++)
+			for(y = 1; y < yMaxless; y++)
 			{
-				for(z = 1; z < zMax - 1; z++)
+				for(x = 1; x < xMaxless; x++)
 				{
+                    int val0 = Index(x, y, z);
+                    int val1 = Index(x - 1, y, z);
+                    int val2 = Index(x + 1, y, z);
+                    int val3 = Index(x, y - 1, z);
+                    int val4 = Index(x, y + 1, z);
+                    int val5 = Index(x, y, z - 1);
+                    int val6 = Index(x, y, z + 1);
+                    
 					double oldVal = u[Index(x, y, z)];
-					double newVal = (u[Index(x, y, z)] + dt * ( 
-						u[Index(x - 1, y, z)] * g[Index(x - 1, y, z)] + 
-						u[Index(x + 1, y, z)] * g[Index(x + 1, y, z)] + 
-						u[Index(x, y - 1, z)] * g[Index(x, y - 1, z)] + 
-						u[Index(x, y + 1, z)] * g[Index(x, y + 1, z)] + 
-						u[Index(x, y, z - 1)] * g[Index(x, y, z - 1)] + 
-						u[Index(x, y, z + 1)] * g[Index(x, y, z + 1)] - gamma * conv[Index(x, y, z)])) /
-						(1.0 + dt * (g[Index(x + 1, y, z)] + g[Index(x - 1, y, z)] + g[Index(x, y + 1, z)] + g[Index(x, y - 1, z)] + g[Index(x, y, z + 1)] + g[Index(x, y, z - 1)]));
+					double newVal = (oldVal + dt * (
+						u[val1] * g[val1] +
+						u[val2] * g[val2] +
+						u[val3] * g[val3] +
+						u[val4] * g[val4] +
+						u[val5] * g[val5] +
+						u[val6] * g[val6] - gamma * conv[val0])) /
+						(1.0 + dt * (g[val2] + g[val1] + g[val4] + g[val3] + g[val6] + g[val5]));
 					if(fabs(oldVal - newVal) < epsilon)
 					{
 						converged++;
 					}
-					u[Index(x, y, z)] = newVal;
+					u[val0] = newVal;
 				}
 			}
 		}

@@ -21,43 +21,15 @@ gcc -O3 -fopenmp -I.  -c ompDeblur.c
 gcc -O3 -fopenmp -I.  -c main.c
 gcc -O3 -fopenmp -I.  -c seqDeblur.c
 gcc -o deblurTest -fopenmp ompDeblur.o main.o seqDeblur.o -lm  
-[jieyun@lnxsrv08 ~/OMPlab2018]$ make all GPROF=1
-make: Nothing to be done for `all'.
+
 [jieyun@lnxsrv08 ~/OMPlab2018]$ make clean
 rm -f deblurTest ompDeblur.o main.o seqDeblur.o gmon.out
+
 [jieyun@lnxsrv08 ~/OMPlab2018]$ make all GPROF=1
 gcc -O2 -pg -fopenmp -I.  -c ompDeblur.c	
 gcc -O2 -pg -fopenmp -I.  -c main.c
 gcc -O2 -pg -fopenmp -I.  -c seqDeblur.c
 gcc -o deblurTest -fopenmp ompDeblur.o main.o seqDeblur.o -lm -pg 
-[jieyun@lnxsrv08 ~/OMPlab2018]$ ./deblurTest
-Loading data...Verifying load integrity...
-Starting the deblur parallelization test
-273852 pixels have converged on iteration 0
-273866 pixels have converged on iteration 1
-274011 pixels have converged on iteration 2
-274347 pixels have converged on iteration 3
-274757 pixels have converged on iteration 4
-275534 pixels have converged on iteration 5
-276158 pixels have converged on iteration 6
-276299 pixels have converged on iteration 7
-276347 pixels have converged on iteration 8
-276386 pixels have converged on iteration 9
-Finished Sequential test, starting parallel test...
-273852 pixels have converged on iteration 0
-273866 pixels have converged on iteration 1
-274011 pixels have converged on iteration 2
-274347 pixels have converged on iteration 3
-274757 pixels have converged on iteration 4
-275534 pixels have converged on iteration 5
-276158 pixels have converged on iteration 6
-276299 pixels have converged on iteration 7
-276347 pixels have converged on iteration 8
-276386 pixels have converged on iteration 9
-Sequential took 14.259762 time units
-OpenMP took 12.248697 time units
-This resulted in a 1.164186x speed-up
-Ending the deblur parallelization test
 
 [jieyun@lnxsrv08 ~/OMPlab2018]$ top
 
@@ -102,9 +74,94 @@ Swap: 20479996k total,     8928k used, 20471068k free, 24733104k cached
    22 root      RT   0     0    0    0 S  0.0  0.0   0:00.78 watchdog/4                       
    23 root      RT   0     0    0    0 S  0.0  0.0   0:00.21 migration/5                      
 
+Control + C to stop.
+
+[jieyun@lnxsrv08 ~/OMPlab2018]$ ./deblurTest
+Loading data...Verifying load integrity...
+Starting the deblur parallelization test
+273852 pixels have converged on iteration 0
+273866 pixels have converged on iteration 1
+274011 pixels have converged on iteration 2
+274347 pixels have converged on iteration 3
+274757 pixels have converged on iteration 4
+275534 pixels have converged on iteration 5
+276158 pixels have converged on iteration 6
+276299 pixels have converged on iteration 7
+276347 pixels have converged on iteration 8
+276386 pixels have converged on iteration 9
+Finished Sequential test, starting parallel test...
+273852 pixels have converged on iteration 0
+273866 pixels have converged on iteration 1
+274011 pixels have converged on iteration 2
+274347 pixels have converged on iteration 3
+274757 pixels have converged on iteration 4
+275534 pixels have converged on iteration 5
+276158 pixels have converged on iteration 6
+276299 pixels have converged on iteration 7
+276347 pixels have converged on iteration 8
+276386 pixels have converged on iteration 9
+Sequential took 14.259762 time units
+OpenMP took 12.248697 time units
+This resulted in a 1.164186x speed-up
+Ending the deblur parallelization test
+
+1.047036[jieyun@lnxsrv02 ~/OMPlab2018]$ gprof ./deblurTest
+Flat profile:
+
+Each sample counts as 0.01 seconds.
+  %   cumulative   self              self     total           
+ time   seconds   seconds    calls   s/call   s/call  name    
+ 33.82     15.51    15.51       20     0.78     0.78  SEQ_GaussianBlur
+ 33.45     30.85    15.34       20     0.77     0.77  OMP_GaussianBlur
+ 17.19     38.74     7.89        1     7.89    23.52  SEQ_Deblur
+ 15.01     45.62     6.89        1     6.89    22.38  OMP_Deblur
+  0.33     45.77     0.15 120022561     0.00     0.00  OMP_SQR
+  0.26     45.89     0.12 120022561     0.00     0.00  SEQ_SQR
+  0.02     45.90     0.01        3     0.00     0.00  LoadMatrix
+  0.00     45.90     0.00        1     0.00     0.00  CompareResults
+  0.00     45.90     0.00        1     0.00     0.00  OMP_Finish
+  0.00     45.90     0.00        1     0.00     0.00  OMP_Initialize
+  0.00     45.90     0.00        1     0.00     0.00  SEQ_Finish
+  0.00     45.90     0.00        1     0.00     0.00  SEQ_Initialize
+
+After saving Index(x, y, z) as temp variables,
+Sequential took 12.236409 time units
+OpenMP took 9.108319 time units
+This resulted in a 1.343432x speed-up
+Ending the deblur parallelization test
+
+After putting in pragma and reversing the order of loops,
+Sequential took 24.039189 time units
+OpenMP took 6.983369 time units
+This resulted in a 3.442348x speed-up
+Ending the deblur parallelization test
+
+After inlining the Index and Sqr functions,
+Sequential took 24.092595 time units
+OpenMP took 1.877352 time units
+This resulted in a 12.833286x speed-up
+Ending the deblur parallelization test
+
+[jieyun@lnxsrv02 ~/OMPlab2018]$ gprof ./deblurTest
+Flat profile:
+
+Each sample counts as 0.01 seconds.
+  %   cumulative   self              self     total           
+ time   seconds   seconds    calls   s/call   s/call  name    
+ 51.76     15.33    15.33       20     0.77     0.77  SEQ_GaussianBlur
+ 25.98     23.03     7.70        1     7.70    23.17  SEQ_Deblur
+ 12.09     26.61     3.58      200     0.02     0.02  OMP_Initialize
+  6.39     28.50     1.89       30     0.06     0.18  OMP_GaussianBlur
+  3.28     29.47     0.97        1     0.97     6.43  OMP_Deblur
+  0.47     29.61     0.14 120022561     0.00     0.00  SEQ_SQR
+  0.10     29.64     0.03        3     0.01     0.01  LoadMatrix
+  0.00     29.64     0.00        1     0.00     0.00  CompareResults
+  0.00     29.64     0.00        1     0.00     0.00  OMP_Finish
+  0.00     29.64     0.00        1     0.00     0.00  SEQ_Finish
+  0.00     29.64     0.00        1     0.00     0.00  SEQ_Initialize
+
 cp /w/class.1/cs/cs33/csbin/OpenMP_new_input_files/Testing_OpenMP.tgz ~
 tar -zxf Testing_OpenMP.tgz
 cd Testing_OpenMP
 ls // prints: f.file  u.file
-
 
