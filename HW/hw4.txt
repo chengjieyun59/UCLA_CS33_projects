@@ -91,7 +91,10 @@ Short answer: The worst order, meaning it takes the longest execution time, is �
 Long explanation:
 
 Looking at how the input matrices a and b are accessed, we can see what’s more efficient.
-	c[i*SIZE+x][j*SIZE+y]=a[i][j]*b[x][y];
+for (i=0; i<SIZE; i++)
+	for (j=0; j<SIZE; j++)		for (x=0; x<SIZE; x++) 
+			for (y=0; y<SIZE; y++)	
+				c[i*SIZE+x][j*SIZE+y]=a[i][j]*b[x][y];
 
 It’s more efficient when we iterate with rows in the outer loop and columns in the inner loop,
 so i and x should be on the outer loop because they are rows for matrices a and b respectively.

@@ -165,3 +165,6 @@ tar -zxf Testing_OpenMP.tgz
 cd Testing_OpenMP
 ls // prints: f.file  u.file
 
+After adding num_threads(16),
+the speed up on server 8 went from 4X to 11X,
+while the speed up on other servers, like server 2, 3, and 7, remain to be 12X-16X.
