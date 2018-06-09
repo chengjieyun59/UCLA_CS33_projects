@@ -58,7 +58,7 @@ void OMP_GaussianBlur(double *u, double Ksigma, int stepCount)
     
     for(step = 0; step < stepCount; step++)
     {
-        #pragma omp parallel for shared(zMax, yMax, xMax) private(z,y,x) num_threads(16)
+        #pragma omp parallel for shared(zMax, yMax, xMax) private(z, y, x) num_threads(16)
         for(z = 0; z < zMax; z++) // combine all groups that have "z = 0; z < zMax; z++"
         {
             for(y = 0; y < yMax; y++) // combine 4 groups that all have "y = 0; y < yMax; y++"
@@ -90,7 +90,7 @@ void OMP_GaussianBlur(double *u, double Ksigma, int stepCount)
         }
         
         // below does not iterate through z = 0 to zMax in the inner loop anymore
-        #pragma omp parallel for shared(zMax, yMax, xMax) private(z,y,x) num_threads(16)
+        #pragma omp parallel for shared(zMax, yMax, xMax) private(z, y, x) num_threads(16)
         for(y = 0; y < yMax; y++) // combine 2 groups that iterate from 0 to yMax and 0 to xMax
         {
             for(x = 0; x < xMax; x++)
@@ -109,7 +109,7 @@ void OMP_GaussianBlur(double *u, double Ksigma, int stepCount)
         }
     }
     
-    #pragma omp parallel for private(z,y,x) shared(zMax, yMax, xMax) num_threads(16)
+    #pragma omp parallel for shared(zMax, yMax, xMax) private(z, y, x) num_threads(16)
     for(z = 0; z < zMax; z++)
     {
         for(y = 0; y < yMax; y++)
@@ -139,29 +139,43 @@ void OMP_Deblur(double* u, const double* f, int maxIterations, double dt, double
     int temp;
     double r;
     double oldVal, newVal;
+    int blockSize = 14;
+    int xx, yy, zz;
     
     for(iteration = 0; iteration < maxIterations && converged != fullyConverged; iteration++)
     {
-        #pragma omp parallel for shared(zMaxless, yMaxless, xMaxless) private(z,y,x, temp, val0, val1, val2, val3, val4, val5, val6) num_threads(16)
-        for(z = 1; z < zMaxless; z++)
+        #pragma omp parallel for shared(blockSize, zMaxless, yMaxless, xMaxless, zMax, yMax, xMax) private(zz, yy, xx, z, y, x, temp) num_threads(16)
+        for(zz = 1; zz < zMaxless; zz+=blockSize) // blocking/ tiling
         {
-            for(y = 1; y < yMaxless; y++)
+            for(yy = 1; yy < yMaxless; yy+=blockSize)
             {
-                for(x = 1; x < xMaxless; x++)
+                for(xx = 1; xx < xMaxless; xx+=blockSize)
                 {
-                    temp = Index(x,y,z);
-                    g[temp] = 1.0 / sqrt(epsilon +
-                                         SQR(u[temp] - u[Index(x + 1, y, z)]) +
-                                         SQR(u[temp] - u[Index(x - 1, y, z)]) +
-                                         SQR(u[temp] - u[Index(x, y + 1, z)]) +
-                                         SQR(u[temp] - u[Index(x, y - 1, z)]) +
-                                         SQR(u[temp] - u[Index(x, y, z + 1)]) +
-                                         SQR(u[temp] - u[Index(x, y, z - 1)]));
+                    for(x = xx; x < xx + blockSize; x++)
+                    {
+                        for(y = yy; y < yy + blockSize; y++)
+                        {
+                            for(z = zz; z < zz + blockSize; z++)
+                            {
+                                temp = Index(x,y,z);
+                                g[temp] = 1.0 / sqrt(epsilon +
+                                                     SQR(u[temp] - u[Index(x + 1, y, z)]) +
+                                                     SQR(u[temp] - u[Index(x - 1, y, z)]) +
+                                                     SQR(u[temp] - u[Index(x, y + 1, z)]) +
+                                                     SQR(u[temp] - u[Index(x, y - 1, z)]) +
+                                                     SQR(u[temp] - u[Index(x, y, z + 1)]) +
+                                                     SQR(u[temp] - u[Index(x, y, z - 1)]));
+                            }
+                        }
+                    }
                 }
             }
         }
+        
         memcpy(conv, u, sizeof(double) * xMax * yMax * zMax);
         OMP_GaussianBlur(conv, Ksigma, 3);
+        
+        #pragma omp parallel for shared(zMax, yMax, xMax) private(z, y, x, temp) num_threads(16)
         for(z = 0; z < zMax; z++)
         {
             for(y = 0; y < yMax; y++)
@@ -175,8 +189,10 @@ void OMP_Deblur(double* u, const double* f, int maxIterations, double dt, double
                 }
             }
         }
+        
         OMP_GaussianBlur(conv, Ksigma, 3);
         converged = 0;
+        
         for(z = 1; z < zMaxless; z++)
         {
             for(y = 1; y < yMaxless; y++)
