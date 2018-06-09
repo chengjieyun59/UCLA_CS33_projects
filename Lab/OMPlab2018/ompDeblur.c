@@ -192,38 +192,49 @@ void OMP_Deblur(double* u, const double* f, int maxIterations, double dt, double
         
         OMP_GaussianBlur(conv, Ksigma, 3);
         converged = 0;
-        
-        for(z = 1; z < zMaxless; z++)
+
+        //#pragma omp parallel for shared(blockSize, zMaxless, yMaxless, xMaxless, zMax, yMax, xMax) private(zz, yy, xx, z, y, x, temp) num_threads(16)
+        for(zz = 1; zz < zMaxless; zz+=blockSize) // blocking/ tiling
         {
-            for(y = 1; y < yMaxless; y++)
+            for(yy = 1; yy < yMaxless; yy+=blockSize)
             {
-                for(x = 1; x < xMaxless; x++)
+                for(xx = 1; xx < xMaxless; xx+=blockSize)
                 {
-                    val0 = Index(x, y, z);
-                    val1 = Index(x - 1, y, z);
-                    val2 = Index(x + 1, y, z);
-                    val3 = Index(x, y - 1, z);
-                    val4 = Index(x, y + 1, z);
-                    val5 = Index(x, y, z - 1);
-                    val6 = Index(x, y, z + 1);
-                    
-                    oldVal = u[val0];
-                    newVal = (oldVal + dt * (
-                                             u[val1] * g[val1] +
-                                             u[val2] * g[val2] +
-                                             u[val3] * g[val3] +
-                                             u[val4] * g[val4] +
-                                             u[val5] * g[val5] +
-                                             u[val6] * g[val6] - gamma * conv[val0])) /
-                    (1.0 + dt * (g[val2] + g[val1] + g[val4] + g[val3] + g[val6] + g[val5]));
-                    if(fabs(oldVal - newVal) < epsilon)
+                    for(x = xx; x < xx + blockSize; x++)
                     {
-                        converged++;
+                        for(y = yy; y < yy + blockSize; y++)
+                        {
+                            for(z = zz; z < zz + blockSize; z++)
+                            {
+                                val0 = Index(x, y, z);
+                                val1 = Index(x - 1, y, z);
+                                val2 = Index(x + 1, y, z);
+                                val3 = Index(x, y - 1, z);
+                                val4 = Index(x, y + 1, z);
+                                val5 = Index(x, y, z - 1);
+                                val6 = Index(x, y, z + 1);
+                                
+                                oldVal = u[val0];
+                                newVal = (oldVal + dt * (
+                                                         u[val1] * g[val1] +
+                                                         u[val2] * g[val2] +
+                                                         u[val3] * g[val3] +
+                                                         u[val4] * g[val4] +
+                                                         u[val5] * g[val5] +
+                                                         u[val6] * g[val6] - gamma * conv[val0])) /
+                                (1.0 + dt * (g[val2] + g[val1] + g[val4] + g[val3] + g[val6] + g[val5]));
+                                if(fabs(oldVal - newVal) < epsilon)
+                                {
+                                    converged++;
+                                }
+                                u[val0] = newVal;
+                            }
+                        }
                     }
-                    u[val0] = newVal;
                 }
             }
         }
+        
         if(converged > lastConverged)
         {
             printf("%d pixels have converged on iteration %d\n", converged, iteration);
