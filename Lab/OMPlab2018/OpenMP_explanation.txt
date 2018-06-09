@@ -1,4 +1,4 @@
-ssh jieyun@lnxsrv08.seas.ucla.edu
+ssh jieyun@lnxsrv09.seas.ucla.edu
 
 // Copy OMPlab2018.tgz from this path
 [jieyun@lnxsrv08 ~]$ cp /w/class.1/cs/cs33/csbin/OpenMP_Spring2018_handout/OMPlab2018.tgz ~

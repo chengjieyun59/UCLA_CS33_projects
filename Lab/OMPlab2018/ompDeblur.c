@@ -56,12 +56,9 @@ void OMP_GaussianBlur(double *u, double Ksigma, int stepCount)
     double boundryScale = 1.0 / (1.0 - nu);
     double postScale = pow(nu / lambda, (double)(3 * stepCount));
     
-    int zMaxminus1 = zMax - 1;
-    int zMaxminus2 = zMax - 2;
-    
     for(step = 0; step < stepCount; step++)
     {
-#pragma omp parallel for shared(zMax, yMax, xMax) private(z,y,x) num_threads(16)
+        #pragma omp parallel for shared(zMax, yMax, xMax) private(z,y,x) num_threads(16)
         for(z = 0; z < zMax; z++) // combine all groups that have "z = 0; z < zMax; z++"
         {
             for(y = 0; y < yMax; y++) // combine 4 groups that all have "y = 0; y < yMax; y++"
@@ -103,14 +100,6 @@ void OMP_GaussianBlur(double *u, double Ksigma, int stepCount)
                 {
                     u[Index(x, y, z)] = u[Index(x, y, z - 1)] * nu;
                 }
-            }
-        }
-        
-        #pragma omp parallel for shared(zMax, yMax, xMax) private(z,y,x,zMaxminus1,zMaxminus2) num_threads(16)
-        for(y = 0; y < yMax; y++) // combine 2 groups that iterate from 0 to yMax and 0 to xMax
-        {
-            for(x = 0; x < xMax; x++)
-            {
                 u[Index(x, y, zMax - 1)] *= boundryScale;
                 for(z = zMax - 2; z >= 0; z--)
                 {
@@ -148,14 +137,12 @@ void OMP_Deblur(double* u, const double* f, int maxIterations, double dt, double
     int zMaxless = zMax - 1;
     int val0, val1, val2, val3, val4, val5, val6;
     int temp;
-    double r, rsquare;
+    double r;
     double oldVal, newVal;
     
     for(iteration = 0; iteration < maxIterations && converged != fullyConverged; iteration++)
     {
-        
-        
-#pragma omp parallel for shared(zMaxless, yMaxless, xMaxless) private(z,y,x, temp, val0, val1, val2, val3, val4, val5, val6) num_threads(16)
+        #pragma omp parallel for shared(zMaxless, yMaxless, xMaxless) private(z,y,x, temp, val0, val1, val2, val3, val4, val5, val6) num_threads(16)
         for(z = 1; z < zMaxless; z++)
         {
             for(y = 1; y < yMaxless; y++)
@@ -163,7 +150,6 @@ void OMP_Deblur(double* u, const double* f, int maxIterations, double dt, double
                 for(x = 1; x < xMaxless; x++)
                 {
                     temp = Index(x,y,z);
-                    
                     g[temp] = 1.0 / sqrt(epsilon +
                                          SQR(u[temp] - u[Index(x + 1, y, z)]) +
                                          SQR(u[temp] - u[Index(x - 1, y, z)]) +
@@ -184,7 +170,6 @@ void OMP_Deblur(double* u, const double* f, int maxIterations, double dt, double
                 {
                     temp = Index(x,y,z);
                     r = conv[temp] * f[temp] / sigma2;
-                    rsquare = r * r;
                     r = (r * (2.38944 + r * (0.950037 + r))) / (4.65314 + r * (2.57541 + r * (1.48937 + r)));
                     conv[temp] -= f[temp] * r;
                 }
