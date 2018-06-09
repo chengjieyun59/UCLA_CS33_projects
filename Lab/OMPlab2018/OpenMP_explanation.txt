@@ -1,4 +1,4 @@
-ssh jieyun@lnxsrv09.seas.ucla.edu
+ssh jieyun@lnxsrv08.seas.ucla.edu
 
 // Copy OMPlab2018.tgz from this path
 [jieyun@lnxsrv08 ~]$ cp /w/class.1/cs/cs33/csbin/OpenMP_Spring2018_handout/OMPlab2018.tgz ~
@@ -166,11 +166,12 @@ cd Testing_OpenMP
 ls // prints: f.file  u.file
 
 After adding num_threads(16),
+
 for the old data set:
 the speed up on server 8 went from 4X to 11X for the,
 while the speed up on other servers, like server 2, 3, and 7, remain to be 12X-16X.
 
 for the new data set:
-the speed up on server 8 is 8X,
+passing the new set of u.file and f.file means that my altered program still does what it should do, and that I didn’t delete “dead code” that wasn’t tested in the old data set.
+the speed up on server 8 is 8X-10X,
 while the speed up on other servers, like server 2, 7, and 9, is 10X-12X.
-

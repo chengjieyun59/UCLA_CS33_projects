@@ -3,8 +3,12 @@
  * Name : Jie Yun Cheng
  * UCLA ID: 004460366
  * Email id: jycheng@ucla.edu
- * Input: Old files
+ * Input: New files
  */
+
+// For the new data set, I got a 10X to 12X speedup on server 8. Not sure by how much it was affected by other users who were also running on server 8.
+// For the old data set, I got a 10X to 15X speedup on server 8.
+// The speedup on other servers tend to be 12X to 16X.
 
 #include <math.h>
 #include <stdio.h>
@@ -91,7 +95,7 @@ void OMP_GaussianBlur(double *u, double Ksigma, int stepCount)
         
         // below does not iterate through z = 0 to zMax in the inner loop anymore
         #pragma omp parallel for shared(zMax, yMax, xMax) private(z, y, x) num_threads(16)
-        for(y = 0; y < yMax; y++) // combine 2 groups that iterate from 0 to yMax and 0 to xMax
+        for(y = 0; y < yMax; y++) // combine 4 groups that iterate from 0 to yMax and 0 to xMax
         {
             for(x = 0; x < xMax; x++)
             {
@@ -132,109 +136,82 @@ void OMP_Deblur(double* u, const double* f, int maxIterations, double dt, double
     double* conv = OMP_conv;
     double* g = OMP_g;
     
-    int xMaxless = xMax - 1;
+    int xMaxless = xMax - 1; // reduce the number of times this is calculated in the loops
     int yMaxless = yMax - 1;
     int zMaxless = zMax - 1;
     int val0, val1, val2, val3, val4, val5, val6;
     int temp;
     double r;
     double oldVal, newVal;
-    int blockSize = 14;
-    int xx, yy, zz;
     
     for(iteration = 0; iteration < maxIterations && converged != fullyConverged; iteration++)
     {
-        #pragma omp parallel for shared(blockSize, zMaxless, yMaxless, xMaxless, zMax, yMax, xMax) private(zz, yy, xx, z, y, x, temp) num_threads(16)
-        for(zz = 1; zz < zMaxless; zz+=blockSize) // blocking/ tiling
+        #pragma omp parallel for shared(zMaxless, yMaxless, xMaxless) private(z,y,x, temp, val0, val1, val2, val3, val4, val5, val6) num_threads(16)
+        for(z = 1; z < zMaxless; z++)
         {
-            for(yy = 1; yy < yMaxless; yy+=blockSize)
+            for(y = 1; y < yMaxless; y++)
             {
-                for(xx = 1; xx < xMaxless; xx+=blockSize)
+                for(x = 1; x < xMaxless; x++)
                 {
-                    for(x = xx; x < xx + blockSize; x++)
-                    {
-                        for(y = yy; y < yy + blockSize; y++)
-                        {
-                            for(z = zz; z < zz + blockSize; z++)
-                            {
-                                temp = Index(x,y,z);
-                                g[temp] = 1.0 / sqrt(epsilon +
-                                                     SQR(u[temp] - u[Index(x + 1, y, z)]) +
-                                                     SQR(u[temp] - u[Index(x - 1, y, z)]) +
-                                                     SQR(u[temp] - u[Index(x, y + 1, z)]) +
-                                                     SQR(u[temp] - u[Index(x, y - 1, z)]) +
-                                                     SQR(u[temp] - u[Index(x, y, z + 1)]) +
-                                                     SQR(u[temp] - u[Index(x, y, z - 1)]));
-                            }
-                        }
-                    }
+                    temp = Index(x,y,z);
+                    g[temp] = 1.0 / sqrt(epsilon +
+                                         SQR(u[temp] - u[Index(x + 1, y, z)]) +
+                                         SQR(u[temp] - u[Index(x - 1, y, z)]) +
+                                         SQR(u[temp] - u[Index(x, y + 1, z)]) +
+                                         SQR(u[temp] - u[Index(x, y - 1, z)]) +
+                                         SQR(u[temp] - u[Index(x, y, z + 1)]) +
+                                         SQR(u[temp] - u[Index(x, y, z - 1)]));
                 }
             }
         }
-        
         memcpy(conv, u, sizeof(double) * xMax * yMax * zMax);
         OMP_GaussianBlur(conv, Ksigma, 3);
-        
-        #pragma omp parallel for shared(zMax, yMax, xMax) private(z, y, x, temp) num_threads(16)
         for(z = 0; z < zMax; z++)
         {
             for(y = 0; y < yMax; y++)
             {
                 for(x = 0; x < xMax; x++)
                 {
-                    temp = Index(x,y,z);
+                    temp = Index(x,y,z); // function calls are expensive. Save in temp first.
                     r = conv[temp] * f[temp] / sigma2;
                     r = (r * (2.38944 + r * (0.950037 + r))) / (4.65314 + r * (2.57541 + r * (1.48937 + r)));
                     conv[temp] -= f[temp] * r;
                 }
             }
         }
-        
         OMP_GaussianBlur(conv, Ksigma, 3);
         converged = 0;
-
-        //#pragma omp parallel for shared(blockSize, zMaxless, yMaxless, xMaxless, zMax, yMax, xMax) private(zz, yy, xx, z, y, x, temp) num_threads(16)
-        for(zz = 1; zz < zMaxless; zz+=blockSize) // blocking/ tiling
+        for(z = 1; z < zMaxless; z++)
         {
-            for(yy = 1; yy < yMaxless; yy+=blockSize)
+            for(y = 1; y < yMaxless; y++)
             {
-                for(xx = 1; xx < xMaxless; xx+=blockSize)
+                for(x = 1; x < xMaxless; x++)
                 {
-                    for(x = xx; x < xx + blockSize; x++)
+                    val0 = Index(x, y, z); // function calls are expensive
+                    val1 = Index(x - 1, y, z);
+                    val2 = Index(x + 1, y, z);
+                    val3 = Index(x, y - 1, z);
+                    val4 = Index(x, y + 1, z);
+                    val5 = Index(x, y, z - 1);
+                    val6 = Index(x, y, z + 1);
+                    
+                    oldVal = u[val0];
+                    newVal = (oldVal + dt * (
+                                             u[val1] * g[val1] +
+                                             u[val2] * g[val2] +
+                                             u[val3] * g[val3] +
+                                             u[val4] * g[val4] +
+                                             u[val5] * g[val5] +
+                                             u[val6] * g[val6] - gamma * conv[val0])) /
+                    (1.0 + dt * (g[val2] + g[val1] + g[val4] + g[val3] + g[val6] + g[val5]));
+                    if(fabs(oldVal - newVal) < epsilon)
                     {
-                        for(y = yy; y < yy + blockSize; y++)
-                        {
-                            for(z = zz; z < zz + blockSize; z++)
-                            {
-                                val0 = Index(x, y, z);
-                                val1 = Index(x - 1, y, z);
-                                val2 = Index(x + 1, y, z);
-                                val3 = Index(x, y - 1, z);
-                                val4 = Index(x, y + 1, z);
-                                val5 = Index(x, y, z - 1);
-                                val6 = Index(x, y, z + 1);
-                                
-                                oldVal = u[val0];
-                                newVal = (oldVal + dt * (
-                                                         u[val1] * g[val1] +
-                                                         u[val2] * g[val2] +
-                                                         u[val3] * g[val3] +
-                                                         u[val4] * g[val4] +
-                                                         u[val5] * g[val5] +
-                                                         u[val6] * g[val6] - gamma * conv[val0])) /
-                                (1.0 + dt * (g[val2] + g[val1] + g[val4] + g[val3] + g[val6] + g[val5]));
-                                if(fabs(oldVal - newVal) < epsilon)
-                                {
-                                    converged++;
-                                }
-                                u[val0] = newVal;
-                            }
-                        }
+                        converged++;
                     }
+                    u[val0] = newVal;
                 }
             }
         }
-        
         if(converged > lastConverged)
         {
             printf("%d pixels have converged on iteration %d\n", converged, iteration);
