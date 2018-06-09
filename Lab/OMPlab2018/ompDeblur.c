@@ -56,6 +56,9 @@ void OMP_GaussianBlur(double *u, double Ksigma, int stepCount)
     double boundryScale = 1.0 / (1.0 - nu);
     double postScale = pow(nu / lambda, (double)(3 * stepCount));
     
+    int zMaxminus1 = zMax - 1;
+    int zMaxminus2 = zMax - 2;
+    
     for(step = 0; step < stepCount; step++)
     {
 #pragma omp parallel for shared(zMax, yMax, xMax) private(z,y,x) num_threads(16)
@@ -91,7 +94,7 @@ void OMP_GaussianBlur(double *u, double Ksigma, int stepCount)
         
         // below does not iterate through z = 0 to zMax in the inner loop anymore
         #pragma omp parallel for shared(zMax, yMax, xMax) private(z,y,x) num_threads(16)
-        for(y = 0; y < yMax; y++)
+        for(y = 0; y < yMax; y++) // combine 2 groups that iterate from 0 to yMax and 0 to xMax
         {
             for(x = 0; x < xMax; x++)
             {
@@ -103,19 +106,13 @@ void OMP_GaussianBlur(double *u, double Ksigma, int stepCount)
             }
         }
         
-        #pragma omp parallel for shared(zMax, yMax, xMax) private(y,x) num_threads(16)
-        for(y = 0; y < yMax; y++)
+        #pragma omp parallel for shared(zMax, yMax, xMax) private(z,y,x,zMaxminus1,zMaxminus2) num_threads(16)
+        for(y = 0; y < yMax; y++) // combine 2 groups that iterate from 0 to yMax and 0 to xMax
         {
             for(x = 0; x < xMax; x++)
             {
                 u[Index(x, y, zMax - 1)] *= boundryScale;
-            }
-        }
-        for(z = zMax - 2; z >= 0; z--)
-        {
-            for(y = 0; y < yMax; y++)
-            {
-                for(x = 0; x < xMax; x++)
+                for(z = zMax - 2; z >= 0; z--)
                 {
                     u[Index(x, y, z)] += u[Index(x, y, z + 1)] * nu;
                 }
@@ -123,7 +120,7 @@ void OMP_GaussianBlur(double *u, double Ksigma, int stepCount)
         }
     }
     
-#pragma omp parallel for private(z,y,x) shared(zMax, yMax, xMax) num_threads(16)
+    #pragma omp parallel for private(z,y,x) shared(zMax, yMax, xMax) num_threads(16)
     for(z = 0; z < zMax; z++)
     {
         for(y = 0; y < yMax; y++)
