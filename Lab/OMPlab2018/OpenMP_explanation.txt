@@ -166,5 +166,11 @@ cd Testing_OpenMP
 ls // prints: f.file  u.file
 
 After adding num_threads(16),
-the speed up on server 8 went from 4X to 11X,
+for the old data set:
+the speed up on server 8 went from 4X to 11X for the,
 while the speed up on other servers, like server 2, 3, and 7, remain to be 12X-16X.
+
+for the new data set:
+the speed up on server 8 is 8X,
+while the speed up on other servers, like server 2, 7, and 9, is 10X-12X.
+
