@@ -58,7 +58,7 @@ void OMP_GaussianBlur(double *u, double Ksigma, int stepCount)
     
     for(step = 0; step < stepCount; step++)
     {
-        #pragma omp parallel for shared(zMax, yMax, xMax) private(z,y,x) num_threads(16)
+#pragma omp parallel for shared(zMax, yMax, xMax) private(z,y,x) num_threads(16)
         for(z = 0; z < zMax; z++) // combine all groups that have "z = 0; z < zMax; z++"
         {
             for(y = 0; y < yMax; y++) // combine 4 groups that all have "y = 0; y < yMax; y++"
@@ -90,26 +90,20 @@ void OMP_GaussianBlur(double *u, double Ksigma, int stepCount)
         }
         
         // below does not iterate through z = 0 to zMax in the inner loop anymore
-#pragma omp parallel for shared(yMax, xMax) private(y,x) num_threads(16)
+        #pragma omp parallel for shared(zMax, yMax, xMax) private(z,y,x) num_threads(16)
         for(y = 0; y < yMax; y++)
         {
             for(x = 0; x < xMax; x++)
             {
                 u[Index(x, y, 0)] *= boundryScale;
-            }
-        }
-        for(z = 1; z < zMax; z++)
-        {
-            for(y = 0; y < yMax; y++)
-            {
-                for(x = 0; x < xMax; x++)
+                for(z = 1; z < zMax; z++)
                 {
                     u[Index(x, y, z)] = u[Index(x, y, z - 1)] * nu;
                 }
             }
         }
         
-#pragma omp parallel for shared(zMax, yMax, xMax) private(y,x) num_threads(16)
+        #pragma omp parallel for shared(zMax, yMax, xMax) private(y,x) num_threads(16)
         for(y = 0; y < yMax; y++)
         {
             for(x = 0; x < xMax; x++)
@@ -162,9 +156,9 @@ void OMP_Deblur(double* u, const double* f, int maxIterations, double dt, double
     
     for(iteration = 0; iteration < maxIterations && converged != fullyConverged; iteration++)
     {
-
         
-        #pragma omp parallel for shared(zMaxless, yMaxless, xMaxless) private(z,y,x, temp, val0, val1, val2, val3, val4, val5, val6) num_threads(16)
+        
+#pragma omp parallel for shared(zMaxless, yMaxless, xMaxless) private(z,y,x, temp, val0, val1, val2, val3, val4, val5, val6) num_threads(16)
         for(z = 1; z < zMaxless; z++)
         {
             for(y = 1; y < yMaxless; y++)
@@ -217,12 +211,12 @@ void OMP_Deblur(double* u, const double* f, int maxIterations, double dt, double
                     
                     oldVal = u[val0];
                     newVal = (oldVal + dt * (
-                                                    u[val1] * g[val1] +
-                                                    u[val2] * g[val2] +
-                                                    u[val3] * g[val3] +
-                                                    u[val4] * g[val4] +
-                                                    u[val5] * g[val5] +
-                                                    u[val6] * g[val6] - gamma * conv[val0])) /
+                                             u[val1] * g[val1] +
+                                             u[val2] * g[val2] +
+                                             u[val3] * g[val3] +
+                                             u[val4] * g[val4] +
+                                             u[val5] * g[val5] +
+                                             u[val6] * g[val6] - gamma * conv[val0])) /
                     (1.0 + dt * (g[val2] + g[val1] + g[val4] + g[val3] + g[val6] + g[val5]));
                     if(fabs(oldVal - newVal) < epsilon)
                     {
